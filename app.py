@@ -1044,15 +1044,6 @@ def profile():
 # app.py
 
 if __name__ == '__main__':
-    # Test için seed: İlgili üyeye ait en az bir katılım kaydı ekle
-    with app.app_context():
-        from datetime import date, timedelta
-        member = Member.query.first()
-        if member:
-            katilim_var_mi = Attendance.query.filter_by(member_id=member.id, status="attended").first()
-            if not katilim_var_mi:
-                db.session.add(Attendance(member_id=member.id, date=date.today() - timedelta(days=3), status="attended"))
-                db.session.commit()
     app.run(debug=True)
 
 def create_weekly_series(start_at, capacity, notes, weeks=12):

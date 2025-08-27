@@ -244,20 +244,110 @@
   });
   
   // Excel'e aktarma fonksiyonu
-  document.getElementById('exportButton').addEventListener('click', function() {
-    // Tabloyu Excel'e dönüştürme işlemi
-    let uri = 'data:application/vnd.ms-excel;base64,';
-    let template = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>{worksheet}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table>{table}</table></body></html>';
-    let base64 = function(s) { return window.btoa(unescape(encodeURIComponent(s))) };
-    let format = function(s, c) { return s.replace(/{(\w+)}/g, function(m, p) { return c[p]; }) };
+  document.getElementById('exportButton').addEventListener('click', async function() {
+    // Loading göstergesi
+    const button = this;
+    const originalText = button.textContent;
+    button.textContent = 'Hazırlanıyor...';
+    button.disabled = true;
     
-    let table = document.getElementById('completedSessionsTable');
-    let ctx = {worksheet: 'TamamlananSeanslar', table: table.innerHTML};
-    
-    let link = document.createElement("a");
-    link.download = "tamamlanan_seanslar_" + new Date().toISOString().slice(0,10) + ".xls";
-    link.href = uri + base64(format(template, ctx));
-    link.click();
+    try {
+      // Tüm seansların detaylarını topla
+      const sessions = [];
+      const rows = document.querySelectorAll('#completedSessionsTable tbody tr');
+      
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const sessionId = row.cells[0].textContent.trim();
+        
+        try {
+          const response = await fetch(`/api/session/${sessionId}/details`);
+          const data = await response.json();
+          
+          sessions.push({
+            id: sessionId,
+            date: data.date,
+            time: data.time,
+            capacity: data.capacity,
+            attendanceRate: data.attendanceRate,
+            notes: data.notes || '',
+            attendees: data.attendees || []
+          });
+        } catch (error) {
+          console.error(`Seans ${sessionId} detayları alınamadı:`, error);
+          // Temel bilgileri satırdan al
+          sessions.push({
+            id: sessionId,
+            date: row.cells[1].textContent.trim(),
+            time: row.cells[2].textContent.trim(),
+            capacity: row.cells[3].textContent.trim(),
+            attendanceRate: 'Bilinmiyor',
+            notes: '',
+            attendees: []
+          });
+        }
+      }
+      
+      // Excel HTML içeriği oluştur
+      let excelContent = `
+        <table border="1" cellpadding="5" cellspacing="0">
+          <thead>
+            <tr>
+              <th>Seans ID</th>
+              <th>Tarih</th>
+              <th>Saat</th>
+              <th>Kapasite</th>
+              <th>Doluluk Oranı</th>
+              <th>Notlar</th>
+              <th>Katılımcılar</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      sessions.forEach(session => {
+        const attendeesText = session.attendees.length > 0 
+          ? session.attendees.map(a => `${a.name} (${a.status === 'attended' ? 'Katıldı' : 'Katılmadı'})`).join(', ')
+          : 'Katılımcı yok';
+          
+        excelContent += `
+          <tr>
+            <td>${session.id}</td>
+            <td>${session.date}</td>
+            <td>${session.time}</td>
+            <td>${session.capacity}</td>
+            <td>%${session.attendanceRate}</td>
+            <td>${session.notes}</td>
+            <td>${attendeesText}</td>
+          </tr>
+        `;
+      });
+      
+      excelContent += `
+          </tbody>
+        </table>
+      `;
+      
+      // Excel dosyası oluştur ve indir
+      const uri = 'data:application/vnd.ms-excel;base64,';
+      const template = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>{worksheet}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>{table}</body></html>';
+      const base64 = function(s) { return window.btoa(unescape(encodeURIComponent(s))) };
+      const format = function(s, c) { return s.replace(/{(\w+)}/g, function(m, p) { return c[p]; }) };
+      
+      const ctx = {worksheet: 'TamamlananSeanslar', table: excelContent};
+      const link = document.createElement("a");
+      link.download = "tamamlanan_seanslar_" + new Date().toISOString().slice(0,10) + ".xls";
+      link.href = uri + base64(format(template, ctx));
+      link.click();
+      
+    } catch (error) {
+      console.error('Excel export hatası:', error);
+      alert('Excel dosyası oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.');
+    } finally {
+      // Butonu geri yükle
+      button.textContent = originalText;
+      button.disabled = false;
+    }
   });
 </script>
 {% endblock %}
