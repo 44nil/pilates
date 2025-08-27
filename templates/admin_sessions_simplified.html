@@ -1,0 +1,361 @@
+{% extends 'base.html' %}
+{% block title %}Seans Yönetimi · Pilates Studio{% endblock %}
+
+{% block content %}
+<div class="grid md:grid-cols-2 gap-6">
+
+  <!-- Yeni Seans Ekle -->
+  <div class="rounded-[22px] border border-white/55 bg-white/55 backdrop-blur-xl p-6 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
+    <h2 class="font-semibold mb-4 text-lg">Yeni Seans Ekle</h2>
+    <form method="post" action="{{ url_for('admin_sessions') }}" class="grid gap-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <label class="block">
+        <span class="mb-1 block text-sm text-stone-600">Tarih</span>
+        <input type="date" name="date"
+               class="w-full rounded-2xl bg-white/80 ring-1 ring-white/60 shadow-inner px-4 py-3 outline-none focus:ring-rose-300"
+               required>
+      </label>
+
+      <label class="block">
+        <span class="mb-1 block text-sm text-stone-600">Saat</span>
+        <input type="time" name="time"
+               class="w-full rounded-2xl bg-white/80 ring-1 ring-white/60 shadow-inner px-4 py-3 outline-none focus:ring-rose-300"
+               required>
+      </label>
+
+      <label class="block">
+        <span class="mb-1 block text-sm text-stone-600">Kapasite</span>
+        <input type="number" name="capacity" min="1" placeholder="Kapasite"
+               class="w-full rounded-2xl bg-white/80 ring-1 ring-white/60 shadow-inner px-4 py-3 outline-none focus:ring-rose-300"
+               required>
+      </label>
+
+      <label class="block">
+        <span class="mb-1 block text-sm text-stone-600">Notlar (opsiyonel)</span>
+        <input type="text" name="notes" placeholder="Örn. Reformer / Mat / Düzey"
+               class="w-full rounded-2xl bg-white/80 ring-1 ring-white/60 shadow-inner px-4 py-3 outline-none focus:ring-rose-300">
+      </label>
+
+      <!-- Sabit / Recurring + Rezerve Üyeler -->
+      <div class="mt-2 rounded-2xl bg-white/70 ring-1 ring-white/60 p-4">
+        <label class="flex items-center gap-3 cursor-pointer select-none">
+          <input type="checkbox" id="reserved_toggle" name="reserved_slot" value="1"
+                 class="h-5 w-5 rounded border-stone-300">
+          <div>
+            <div class="font-medium text-sm">Bu seansı sabit/recurring olarak rezerve et</div>
+            <div class="text-xs text-stone-500">Seçili üyeler için her hafta aynı gün/saat otomatik yer ayrılır.</div>
+          </div>
+        </label>
+
+        <div id="reserved_area" class="hidden mt-4 space-y-3">
+          <label class="block">
+            <span class="mb-1 block text-sm text-stone-600">Üye Seç (çoklu)</span>
+            <select name="reserved_member_ids[]" multiple
+                    class="w-full rounded-2xl bg-white/80 ring-1 ring-white/60 shadow-inner px-4 py-3 outline-none focus:ring-rose-300
+                           [&_option:checked]:bg-rose-100 [&_option:checked]:font-medium [&_option:checked]:text-rose-700">
+              {% if members is defined and members %}
+                {% for m in members %}
+                  <option value="{{ m.id }}">{{ m.full_name }} ({{ m.credits }} hak)</option>
+                {% endfor %}
+              {% else %}
+                <option disabled>Üye listesi bulunamadı (admin_members ekleyin)</option>
+              {% endif %}
+            </select>
+            <p class="text-[12px] text-stone-500 mt-1">Ctrl/⌘ ile çoklu seçim yapabilirsiniz.</p>
+          </label>
+
+          <label class="block">
+            <span class="mb-1 block text-sm text-stone-600">Tekrarlama Deseni</span>
+            <select name="repeat_pattern"
+                    class="w-full rounded-2xl bg-white/80 ring-1 ring-white/60 shadow-inner px-4 py-3 outline-none focus:ring-rose-300">
+              <option value="weekly" selected>Her Hafta (önerilen)</option>
+              <option value="biweekly">2 Haftada Bir</option>
+              <option value="monthly">Aylık</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <button class="mt-2 rounded-2xl bg-gradient-to-r from-rose-300 to-violet-300 px-4 py-3 shadow-lg hover:shadow-xl transition">
+        ➕ Ekle
+      </button>
+    </form>
+  </div>
+
+  <!-- Seans Listesi -->
+  <div class="rounded-[22px] border border-white/55 bg-white/55 backdrop-blur-xl p-6 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-semibold text-lg">Seanslar</h2>
+      <div class="flex items-center gap-2">
+        <a href="{{ url_for('completed_sessions_bp.admin_completed_sessions') }}" class="py-1 px-3 text-xs rounded-full bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 shadow-sm hover:bg-emerald-200 transition">
+          Tamamlanan Seanslar
+        </a>
+        <span class="text-xs text-stone-500">Toplam: {{ sessions|length }}</span>
+      </div>
+    </div>
+    
+    <!-- Filtreler -->
+    <div class="flex flex-wrap gap-2 mb-4">
+      <button type="button" onclick="filterByDate('today')" 
+              class="py-1 px-3 text-xs rounded-full bg-rose-100 text-rose-700 ring-1 ring-rose-200 shadow-sm hover:bg-rose-200 transition">
+        Bugün
+      </button>
+      <button type="button" onclick="filterByDate('thisWeek')" 
+              class="py-1 px-3 text-xs rounded-full bg-violet-100 text-violet-700 ring-1 ring-violet-200 shadow-sm hover:bg-violet-200 transition">
+        Bu Hafta
+      </button>
+      <button type="button" onclick="filterByDate('nextWeek')" 
+              class="py-1 px-3 text-xs rounded-full bg-stone-100 text-stone-700 ring-1 ring-stone-200 shadow-sm hover:bg-stone-200 transition">
+        Gelecek Hafta
+      </button>
+    </div>
+    
+    <!-- Seans Kategorileri -->
+    <div class="space-y-6">
+      {% if categories is defined %}
+        {% for cat in categories %}
+          <div class="category-section mb-6" data-category="{{ cat['name']|lower }}">
+            <!-- Kategori Başlığı -->
+            <button type="button" onclick="toggleCategory('{{ loop.index0 }}')"
+              class="w-full text-left font-semibold text-base mb-2 px-4 py-3 rounded-xl bg-{{ cat['bg'] }} text-{{ cat['color'] }} shadow hover:bg-{{ cat['bg'] }} transition
+                     flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">{{ cat['icon'] }}</span>
+                <span>{{ cat['name'] }}</span>
+              </div>
+              <div class="text-sm text-{{ cat['color'] }} bg-white/50 px-3 py-1 rounded-lg">
+                {% if cat['items'] is defined and cat['items'] is iterable %}
+                  {{ cat['items']|length }} seans
+                {% else %}
+                  0 seans
+                {% endif %}
+              </div>
+            </button>
+            
+            <!-- Kategori İçeriği -->
+            <div id="cat-{{ loop.index0 }}" class="space-y-3 transition-all">
+            
+            {% if cat['items'] is defined and cat['items'] %}
+              <div class="space-y-2">
+                {# İlk 3 seansı göster #}
+                {% for s in cat['items'][:3] %}
+                  <div class="session-item p-3 bg-white/80 rounded-lg shadow-sm"
+                       data-date="{{ s.date.strftime('%Y-%m-%d') }}">
+                    <div class="flex justify-between">
+                      <div>
+                        <div class="font-medium">
+                          {% set day_name = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'][s.date.weekday()] %}
+                          <span class="text-sm font-medium text-violet-700 mr-1">{{ day_name }}</span>
+                          {{ s.date.strftime('%d.%m.%Y') }} {{ s.time.strftime('%H:%M') }}
+                        </div>
+                        <div class="text-sm text-stone-600">Kapasite: {{ s.capacity }} · Kalan: {{ s.spots_left }}</div>
+                        {% if s.notes %}<div class="text-sm text-amber-600">{{ s.notes }}</div>{% endif %}
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <a href="{{ url_for('admin_participants', session_id=s.id) }}" 
+                           class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">Katılımcılar</a>
+                        <form method="post" action="{{ url_for('admin_delete_session', session_id=s.id) }}"
+                              onsubmit="return confirm('Seans silinsin mi?')">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                          <button class="px-2 py-1 bg-red-100 text-red-700 rounded text-sm">Sil</button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+                
+                {# "Daha fazla göster" butonunu göster (sadece tamamlanan seanslar için kaldırdık) #}
+                {% if cat['items']|length > 3 %}
+                  {% if cat['name'] != 'Tamamlandı' %}
+                    <button type="button" id="more-btn-{{ loop.index0 }}" onclick="toggleMoreItems('{{ loop.index0 }}')"
+                      class="w-full mt-2 rounded-lg bg-gray-100 text-gray-700 py-2 text-sm font-medium shadow hover:bg-gray-200 transition">
+                      Daha fazla göster ({{ cat['items']|length - 3 }})
+                    </button>
+                    
+                    {# 3'ten sonraki seanslar için gizli div #}
+                    <div id="more-content-{{ loop.index0 }}" class="hidden transition-all duration-300 mt-3 space-y-3">
+                  {% else %}
+                    {# Tamamlanan seanslar için div her zaman görünür olsun #}
+                    <div class="mt-3 space-y-3">
+                  {% endif %}
+                    {% for s in cat['items'][3:] %}
+                      <div class="session-item p-3 bg-white/80 rounded-lg shadow-sm"
+                           data-date="{{ s.date.strftime('%Y-%m-%d') }}">
+                        <div class="flex justify-between">
+                          <div>
+                            <div class="font-medium">
+                              {% set day_name = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'][s.date.weekday()] %}
+                              <span class="text-sm font-medium text-violet-700 mr-1">{{ day_name }}</span>
+                              {{ s.date.strftime('%d.%m.%Y') }} {{ s.time.strftime('%H:%M') }}
+                            </div>
+                            <div class="text-sm text-gray-600">Kapasite: {{ s.capacity }} · Kalan: {{ s.spots_left }}</div>
+                            {% if s.notes %}<div class="text-sm text-purple-600">{{ s.notes }}</div>{% endif %}
+                          </div>
+                          <div class="flex items-center gap-2">
+                            <a href="{{ url_for('admin_participants', session_id=s.id) }}" 
+                              class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">Katılımcılar</a>
+                            <form method="post" action="{{ url_for('admin_delete_session', session_id=s.id) }}"
+                                  onsubmit="return confirm('Seans silinsin mi?')">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                              <button class="px-2 py-1 bg-red-100 text-red-700 rounded text-sm">Sil</button>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            {% else %}
+              <p class="text-gray-500 text-sm">Bu kategoride seans yok.</p>
+            {% endif %}
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-red-500">Kategori bilgisi bulunamadı!</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  // Basit rezervasyon alanını gösterme/gizleme
+  document.addEventListener('DOMContentLoaded', function() {
+    const reservedToggle = document.getElementById('reserved_toggle');
+    const reservedArea = document.getElementById('reserved_area');
+    
+    if (reservedToggle && reservedArea) {
+      reservedToggle.addEventListener('change', function() {
+        if (this.checked) {
+          reservedArea.classList.remove('hidden');
+        } else {
+          reservedArea.classList.add('hidden');
+        }
+      });
+    }
+  });
+  
+  // Kategoriyi açıp kapatma
+  function toggleCategory(cat) {
+    const el = document.getElementById('cat-' + cat);
+    if (el) {
+      if (el.classList.contains('hidden')) {
+        el.classList.remove('hidden');
+      } else {
+        el.classList.add('hidden');
+      }
+    }
+  }
+  
+  // "Daha fazla" bölümünü açıp kapatma (sadece gelecek seanslar ve haftalık seri için)
+  function toggleMoreItems(cat) {
+    const moreContent = document.getElementById('more-content-' + cat);
+    const moreBtn = document.getElementById('more-btn-' + cat);
+    
+    if (moreContent) {
+      if (moreContent.classList.contains('hidden')) {
+        moreContent.classList.remove('hidden');
+        if (moreBtn) moreBtn.textContent = 'Daha az göster';
+      } else {
+        moreContent.classList.add('hidden');
+        if (moreBtn) {
+          const count = moreContent.querySelectorAll('.session-item').length;
+          moreBtn.textContent = 'Daha fazla göster (' + count + ')';
+        }
+      }
+    }
+  }
+  
+  // Tarih filtreleme
+  function filterByDate(filter) {
+    console.log('Filtering by:', filter); // Debugging
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay()); // Haftanın başlangıcı (Pazar)
+    
+    const startOfNextWeek = new Date(startOfWeek);
+    startOfNextWeek.setDate(startOfWeek.getDate() + 7);
+    
+    const endOfNextWeek = new Date(startOfNextWeek);
+    endOfNextWeek.setDate(startOfNextWeek.getDate() + 6);
+    
+    console.log('Today:', today.toISOString().split('T')[0]);
+    console.log('Start of week:', startOfWeek.toISOString().split('T')[0]);
+    console.log('Start of next week:', startOfNextWeek.toISOString().split('T')[0]);
+    
+    // Aktif filtreyi görsel olarak belirgin hale getir
+    document.querySelectorAll('.flex.flex-wrap.gap-2.mb-4 button').forEach(btn => {
+      btn.classList.remove('font-bold', 'ring-2');
+      if (btn.textContent.trim().toLowerCase().includes(
+        filter === 'today' ? 'bugün' : 
+        filter === 'thisWeek' ? 'bu hafta' : 
+        filter === 'nextWeek' ? 'gelecek hafta' : ''
+      )) {
+        btn.classList.add('font-bold', 'ring-2');
+      }
+    });
+    
+    // "Daha fazla göster" alanlarını filtreleme için hazırla
+    document.querySelectorAll('[id^="more-content-"]').forEach(el => {
+      // Eğer tamamlanan seanslar değilse ve filtreleme yapılıyorsa göster
+      if (!el.closest('.category-section[data-category="tamamlandı"]') && filter !== 'all') {
+        el.classList.remove('hidden');
+      }
+    });
+    
+    const items = document.querySelectorAll('.session-item');
+    let visibleCount = 0;
+    
+    items.forEach(item => {
+      const dateStr = item.getAttribute('data-date');
+      if (!dateStr) {
+        console.log('No date attribute for item:', item.textContent.trim());
+        item.style.display = 'block';
+        return;
+      }
+      
+      const itemDate = new Date(dateStr);
+      itemDate.setHours(0, 0, 0, 0);
+      
+      console.log('Item date:', dateStr, 'parsed as', itemDate.toISOString().split('T')[0]);
+      
+      let isVisible = true; // Varsayılan görünür
+      
+      if (filter === 'today') {
+        isVisible = itemDate.toISOString().split('T')[0] === today.toISOString().split('T')[0];
+      } else if (filter === 'thisWeek') {
+        isVisible = itemDate >= startOfWeek && itemDate < startOfNextWeek;
+      } else if (filter === 'nextWeek') {
+        isVisible = itemDate >= startOfNextWeek && itemDate <= endOfNextWeek;
+      }
+      
+      if (isVisible) visibleCount++;
+      item.style.display = isVisible ? 'block' : 'none';
+    });
+    
+    console.log('Total visible items:', visibleCount);
+    
+    // Tüm kategorileri kontrol et, görünecek öğesi olmayan kategorileri gizle
+    document.querySelectorAll('.category-section').forEach(cat => {
+      const visibleItems = Array.from(cat.querySelectorAll('.session-item')).filter(item => 
+        item.style.display !== 'none'
+      );
+      
+      cat.style.display = (visibleItems.length > 0 || filter === 'all') ? 'block' : 'none';
+      
+      // Kategoriyi görünür yap
+      if (visibleItems.length > 0) {
+        const catId = cat.querySelector('[id^="cat-"]')?.id;
+        if (catId) {
+          document.getElementById(catId)?.classList.remove('hidden');
+        }
+      }
+    });
+  }
+
+  // İlk yükleme - artık filtreleme yapılmadan tümünü göster
+</script>
+{% endblock %}

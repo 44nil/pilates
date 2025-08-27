@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+{% block title %}Admin Paneli · Pilates Studio{% endblock %}
+{% block content %}
+
+{# yüzde hesapla (cap 0 ise 0%) #}
+{% set pct = (today_fill*100//today_cap) if today_cap else 0 %}
+
+<div class="grid md:grid-cols-3 gap-6">
+  <!-- KPI: Toplam Seans -->
+  <div class="rounded-2xl border border-white/55 bg-white/55 backdrop-blur-xl p-5 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
+    <div class="flex items-center gap-3">
+      <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-rose-200 to-violet-200 shadow-inner">🗓️</span>
+      <div class="flex-1">
+        <div class="text-xs text-stone-500">Toplam Seans</div>
+        <div class="text-2xl font-semibold">{{ total_sessions }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI: Yaklaşan -->
+  <div class="rounded-2xl border border-white/55 bg-white/55 backdrop-blur-xl p-5 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
+    <div class="flex items-center gap-3">
+      <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-200 to-pink-200 shadow-inner">⏱️</span>
+      <div class="flex-1">
+        <div class="text-xs text-stone-500">Yaklaşan</div>
+        <div class="text-2xl font-semibold">{{ upcoming }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI: Aktif Rezervasyon -->
+  <div class="rounded-2xl border border-white/55 bg-white/55 backdrop-blur-xl p-5 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
+    <div class="flex items-center gap-3">
+      <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-200 to-teal-200 shadow-inner">👥</span>
+      <div class="flex-1">
+        <div class="text-xs text-stone-500">Aktif Rezervasyon</div>
+        <div class="text-2xl font-semibold">{{ active_res }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# güvenli yüzde hesapla #}
+{% set cap  = today_cap  or 0 %}
+{% set fill = today_fill or 0 %}
+{% set pct  = (fill * 100 // cap) if cap else 0 %}
+
+{# güvenli yüzde hesapla #}
+{% set cap  = today_cap  or 0 %}
+{% set fill = today_fill or 0 %}
+{% set pct  = (fill * 100 // cap) if cap else 0 %}
+{% set pct_int = pct|int %}
+
+<!-- Bugün Doluluk -->
+<div class="rounded-2xl border border-white/55 bg-white/55 backdrop-blur-xl p-6 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)] mt-6">
+  <div class="flex items-center justify-between">
+    <div class="text-sm text-stone-500">Bugün doluluk</div>
+    <div class="text-sm font-medium">{{ today_fill }} / {{ today_cap }}</div>
+  </div>
+
+  <div class="mt-3 h-3 w-full rounded-full bg-white/70 ring-1 ring-white/60 shadow-inner overflow-hidden">
+    <!-- style yerine data-pct kullandık -->
+    <div class="progress-fill h-full rounded-full bg-gradient-to-r from-rose-300 via-fuchsia-300 to-violet-300 transition-all"
+         data-pct="{{ pct_int }}"></div>
+  </div>
+
+  <div class="mt-2 text-[12px] text-stone-500">{{ pct_int }}%</div>
+</div>
+
+{% block scripts %}
+<script>
+// Set progress bar width on load
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.progress-fill').forEach(el => {
+    const v = parseInt(el.dataset.pct || '0', 10);
+    el.style.width = (isFinite(v) ? v : 0) + '%';
+  });
+
+  // Modal elements
+  const openBtn = document.getElementById('openMeasurementModal');
+  const modal = document.getElementById('measurementModal');
+  const closeBtn = document.getElementById('closeMeasurementModal');
+  const memberSelect = document.getElementById('modalMemberSelect');
+  const contentDiv = document.getElementById('measurementContent');
+
+  // Open/close modal
+  if (openBtn && modal) openBtn.addEventListener('click', () => modal.classList.remove('hidden'));
+  if (closeBtn && modal) closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+  if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
+
+  // Member select -> fetch form + table
+  if (memberSelect && contentDiv) {
+    memberSelect.addEventListener('change', async () => {
+      const id = memberSelect.value;
+      if (!id) { contentDiv.innerHTML = ''; return; }
+      contentDiv.innerHTML = '<div class="text-center text-stone-400 py-4">Yükleniyor...</div>';
+      try {
+        const [listHtml, formHtml] = await Promise.all([
+          fetch(`/admin/measurement-list?member_id=${id}`).then(r => r.text()),
+          fetch(`/admin/add-measurement?member_id=${id}`).then(r => r.text()),
+        ]);
+        const parser = new DOMParser();
+        const form = parser.parseFromString(formHtml, 'text/html').querySelector('form');
+        const table = parser.parseFromString(listHtml, 'text/html').querySelector('table');
+        contentDiv.innerHTML =
+          (form ? form.outerHTML : '') +
+          (table ? '<div class="mt-6">' + table.outerHTML + '</div>'
+                 : '<div class="mt-6 text-stone-500">Seçilen üyeye ait ölçüm bulunamadı.</div>');
+      } catch (err) {
+        console.error(err);
+        contentDiv.innerHTML = '<div class="mt-6 text-red-600">Veri alınamadı.</div>';
+      }
+    });
+  }
+});
+
+// Silme formu: AJAX POST → tabloyu yenile
+if (contentDiv) {
+  contentDiv.addEventListener('submit', async (e) => {
+    const form = e.target;
+    if (!form.classList.contains('deleteMeasurementForm')) return;
+    e.preventDefault();
+    if (!confirm('Bu ölçümü silmek istiyor musunuz?')) return;
+    const res = await fetch(form.action, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: new FormData(form)
+    });
+    const html = await res.text();
+    if (!res.ok) { alert('Silinemedi: ' + html); return; }
+    const parser = new DOMParser();
+    const newTable = parser.parseFromString(html, 'text/html').querySelector('table')
+                  || parser.parseFromString(html, 'text/html').body.firstElementChild;
+    const oldTable = contentDiv.querySelector('table');
+    if (newTable && oldTable) oldTable.replaceWith(newTable);
+  });
+}
+</script>
+{% endblock %}
+
+
+
+<div class="mt-6 flex flex-wrap gap-3">
+  <a href="{{ url_for('admin_sessions') }}"
+     class="inline-flex items-center gap-2 rounded-2xl px-5 py-3 bg-gradient-to-r from-rose-300 to-violet-300 text-stone-900 shadow hover:shadow-md">
+    🧭 Seansları Yönet
+  </a>
+  <a href="{{ url_for('admin_members') }}"
+     class="inline-flex items-center gap-2 rounded-2xl px-5 py-3 bg-white/80 border border-white/60 backdrop-blur shadow hover:bg-white">
+    👤 Üyeler
+  </a>
+  <div class="relative group">
+      <button id="openMeasurementModal" type="button" class="inline-flex items-center gap-2 rounded-2xl px-5 py-3 bg-emerald-100 text-emerald-900 shadow hover:shadow-md transition">
+        📏 Ölçüm Paneli
+        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+      </button>
+      <!-- Sadeleştirilmiş Ölçüm Paneli Modalı -->
+      <div id="measurementModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm hidden">
+        <div class="bg-white/95 rounded-2xl p-6 w-full max-w-2xl shadow-xl relative">
+          <button id="closeMeasurementModal" type="button" class="absolute top-3 right-3 text-stone-400 hover:text-stone-700 text-xl">&times;</button>
+          <h3 class="text-lg font-semibold mb-4">Üye Ölçüm Paneli</h3>
+          <div class="mb-4">
+            <label class="block mb-2 text-sm font-medium">Üye Seç</label>
+            <select id="modalMemberSelect" class="w-full p-2 border rounded-xl">
+              <option value="">Üye seçiniz...</option>
+              {% for m in members %}
+                <option value="{{ m.id }}">{{ m.full_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div id="measurementContent"></div>
+        </div>
+      </div>
+  </div>
+  <a href="{{ url_for('admin_cancel_requests') }}"
+     class="inline-flex items-center gap-2 rounded-2xl px-5 py-3 bg-amber-200 text-amber-900 shadow hover:shadow-md">
+    ❌ İptal Talepleri
+    <span class="ml-1 inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold bg-white/70 rounded-full">
+      {{ pending_count }}
+    </span>
+  </a>
+</div>
+
+<!-- Bekleyen iptal (kart stili ve boşluklar üstteki KPI'larla aynı) -->
+<div class="mt-6 rounded-2xl border border-white/55 bg-white/55 backdrop-blur-xl p-5 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
+  <div class="text-sm text-stone-500">Bekleyen İptal</div>
+  <div class="text-2xl font-semibold">{{ pending_count }}</div>
+</div>
+
+<!-- Ölçüm paneli sadece modal olarak açılacak, sayfa üzerinde tablo olmayacak. -->
+
+{% endblock %}
+
+<script>
+// Ölçüm Paneli Modal aç/kapat
+const openBtn = document.getElementById('openMeasurementModal');
+const modal = document.getElementById('measurementModal');
+const closeBtn = document.getElementById('closeMeasurementModal');
+const memberSelect = document.getElementById('modalMemberSelect');
+const contentDiv = document.getElementById('measurementContent');
+
+if (openBtn && modal) {
+  openBtn.onclick = () => { modal.classList.remove('hidden'); };
+}
+if (closeBtn && modal) {
+  closeBtn.onclick = () => { modal.classList.add('hidden'); };
+}
+if (modal) {
+  modal.onclick = (e) => { if (e.target === modal) modal.classList.add('hidden'); };
+}
+
+if (memberSelect && contentDiv) {
+  memberSelect.onchange = function() {
+    const val = memberSelect.value;
+    if (val) {
+      contentDiv.innerHTML = '<div class="text-center text-stone-400 py-4">Yükleniyor...</div>';
+      // Ölçüm ekleme formunu ve ölçüm listesini AJAX ile getir
+      fetch(`/admin/measurement-list?member_id=${val}`)
+        .then(r => r.text())
+        .then(html => {
+          // Ölçüm ekleme formunu da ekle
+          fetch(`/admin/add-measurement?member_id=${val}`)
+            .then(r2 => r2.text())
+            .then(formHtml => {
+              // Sadece formu ve tabloyu ayıkla
+              const parser = new DOMParser();
+              const doc1 = parser.parseFromString(formHtml, 'text/html');
+              const form = doc1.querySelector('form');
+              const doc2 = parser.parseFromString(html, 'text/html');
+              const table = doc2.querySelector('table');
+              let tableHtml = '';
+              if (table) tableHtml = '<div class="mt-6">' + table.outerHTML + '</div>';
+              else tableHtml = '<div class="mt-6 text-stone-500">Seçilen üyeye ait ölçüm bulunamadı.</div>';
+              contentDiv.innerHTML = '<div>' + form.outerHTML + tableHtml + '</div>';
+            });
+        });
+    } else {
+      contentDiv.innerHTML = '';
+    }
+  };
+}
+
+contentDiv.addEventListener('submit', async (e) => {
+  if (e.target.id !== 'addMeasurementForm') return;
+  e.preventDefault();
+  const form = e.target;
+  const formData = new FormData(form);
+  const res = await fetch(form.action, {
+    method: 'POST',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    body: formData
+  });
+  const html = await res.text();
+  // replace/append table
+  const parser = new DOMParser();
+  const table = parser.parseFromString(html, 'text/html').querySelector('table');
+  if (table) {
+    const existing = contentDiv.querySelector('table');
+    (existing ? existing.replaceWith(table) : contentDiv.insertAdjacentElement('beforeend', table));
+    form.reset();
+  }
+});
+
+// Silme formu: AJAX POST → tabloyu yenile
+if (contentDiv) {
+  contentDiv.addEventListener('submit', async (e) => {
+    const form = e.target;
+    if (!form.classList.contains('deleteMeasurementForm')) return;
+    e.preventDefault();
+    if (!confirm('Bu ölçümü silmek istiyor musunuz?')) return;
+    const res = await fetch(form.action, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: new FormData(form)
+    });
+    const html = await res.text();
+    if (!res.ok) { alert('Silinemedi: ' + html); return; }
+    const parser = new DOMParser();
+    const newTable = parser.parseFromString(html, 'text/html').querySelector('table')
+                  || parser.parseFromString(html, 'text/html').body.firstElementChild;
+    const oldTable = contentDiv.querySelector('table');
+    if (newTable && oldTable) oldTable.replaceWith(newTable);
+  });
+}
+</script>

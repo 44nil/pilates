@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+{% block title %}Haftalık Takvim · Pilates Studio{% endblock %}
+
+{% block content %}
+{% set gunler = {
+  'Monday': 'Pazartesi', 'Tuesday': 'Salı', 'Wednesday': 'Çarşamba', 'Thursday': 'Perşembe',
+  'Friday': 'Cuma', 'Saturday': 'Cumartesi'
+} %}
+
+{% set gunler_kisa = {
+  'Mon': 'Pzt', 'Tue': 'Sal', 'Wed': 'Çar', 'Thu': 'Per',
+  'Fri': 'Cum', 'Sat': 'Cmt'
+} %}
+<div class="rounded-[22px] border border-white/55 bg-white/55 backdrop-blur-xl p-6 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
+  <!-- Üst bar: hafta başlığı + navigasyon -->
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="font-semibold text-lg">Haftalık Takvim</h2>
+      <div class="text-xs text-stone-500">{{ week_label }}</div>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="{{ url_for('sessions_calendar', d=prev_week) }}"
+         class="rounded-xl px-3 py-1 ring-1 ring-white/60 bg-white/70 shadow hover:shadow-md">← Önceki</a>
+      <a href="{{ url_for('sessions_calendar', d=next_week) }}"
+         class="rounded-xl px-3 py-1 ring-1 ring-white/60 bg-white/70 shadow hover:shadow-md">Sonraki →</a>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="flex flex-wrap gap-3 text-xs mb-4">
+    <span class="inline-flex items-center gap-2">
+      <span class="w-3 h-3 rounded-full bg-gradient-to-r from-rose-300 to-violet-300 ring-1 ring-white/60"></span> Uygun
+    </span>
+    <span class="inline-flex items-center gap-2">
+      <span class="w-3 h-3 rounded-full bg-gray-300"></span> Dolu
+    </span>
+    <span class="inline-flex items-center gap-2">
+      <span class="w-3 h-3 rounded-full bg-emerald-300 ring-1 ring-white/60"></span> Katıldım
+    </span>
+    <span class="inline-flex items-center gap-2">
+      <span class="w-3 h-3 rounded-full bg-amber-300 ring-1 ring-white/60"></span> Özel Grup
+    </span>
+  </div>
+
+  <!-- Grid -->
+  <div class="overflow-auto rounded-2xl bg-white/60 ring-1 ring-white/60 shadow-inner">
+    <div class="grid" style="grid-template-columns: 90px repeat(6, minmax(160px,1fr));">
+      <!-- Üst sol boş hücre -->
+      <div class="sticky top-0 z-10 bg-white/80 backdrop-blur-xl ring-1 ring-white/60"></div>
+      <!-- Gün başlıkları -->
+      {% for d in days if d.strftime('%A') != 'Sunday' %}
+        <div class="sticky top-0 z-10 bg-white/80 backdrop-blur-xl ring-1 ring-white/60 px-3 py-2 text-sm font-medium">
+          {{ gunler_kisa[d.strftime('%a')] }}<br>
+          <span class="text-stone-500 text-xs">{{ d.strftime('%d.%m') }}</span>
+        </div>
+      {% endfor %}
+      <!-- Saat satırları -->
+      {% for t in slots %}
+        <!-- Sol saat etiketi -->
+        <div class="sticky left-0 bg-white/70 backdrop-blur-xl ring-1 ring-white/60 px-2 py-3 text-sm font-medium">
+          {{ t.strftime('%H:%M') }}
+        </div>
+        <!-- Gün x Saat hücreleri -->
+        {% for d in days if d.strftime('%A') != 'Sunday' %}
+          {% set day_key = d.strftime('%Y-%m-%d') %}
+          {% set time_key = t.strftime('%H:%M') %}
+          {% set list_in_cell = by_cell.get((day_key, time_key), []) %}
+          <div class="border border-white/50 p-2 min-h-[72px]">
+            {% if list_in_cell|length > 0 %}
+              {% for s in list_in_cell %}
+                {% set left = s.spots_left|default(0) %}
+                <div class="rounded-xl p-2 shadow-lg mb-2 last:mb-0 relative
+                            {% if left == 0 %} bg-gray-200 text-gray-600 cursor-not-allowed
+                            {% elif s.user_joined %} bg-emerald-300/80 ring-1 ring-white/60
+                            {% elif s.is_reserved %} bg-amber-300/80 ring-1 ring-white/60
+                            {% else %} bg-gradient-to-r from-rose-300 to-violet-300
+                            {% endif %}">
+                  <div class="text-xs font-semibold flex items-center justify-between">
+                    <span>{{ time_key }}</span>
+                    <span class="text-[11px] opacity-80">
+                      {% if left == 0 %}
+                        <span class="text-red-600 font-bold">DOLU</span>
+                      {% elif left == 1 %}
+                        <span class="text-orange-500 font-bold">Son 1 yer</span>
+                      {% elif left in [2,3] %}
+                        <span class="text-green-600">Kalan {{ left }}</span>
+                      {% elif left > 3 %}
+                        <span class="text-blue-600">{{ left }}/{{ s.capacity }} boş</span>
+                      {% endif %}
+                    </span>
+                  </div>
+                  {% if role == 'member' %}
+                    {% if left > 0 %}
+                      <form method="post" action="/reserve/{{ s.id }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button class="reserve-btn mt-1 w-full rounded-lg px-2 py-1 text-xs shadow transition
+                                       bg-black/10 hover:bg-black/20">
+                          Rezerve Et
+                        </button>
+                      </form>
+                    {% else %}
+                      <div class="mt-1 text-center text-xs text-gray-500">Dolu</div>
+                    {% endif %}
+                  {% else %}
+                    <button class="absolute inset-0 admin-session-btn" data-info="{{ s.id }}" style="z-index:10; background:transparent;"></button>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="h-12 rounded-xl border border-transparent"></div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+<!-- Admin: Seans Bilgi Modalı -->
+<div id="sessionInfoModal" class="fixed inset-0 z-50 hidden bg-black/30 backdrop-blur-sm items-center justify-center">
+  <div class="bg-white rounded-2xl p-5 w-full max-w-md relative">
+    <button class="absolute top-2 right-3 text-xl" data-close>&times;</button>
+    <div class="text-lg font-semibold mb-2" id="mTitle"></div>
+    <div class="text-sm mb-1">Kapasite: <span id="mCap"></span></div>
+    <div class="text-sm mb-1">Kalan: <span id="mRem"></span></div>
+    <div class="text-sm">Katılımcılar:</div>
+    <ul id="mParts" class="text-sm text-stone-600 list-disc pl-5 mt-1"></ul>
+  </div>
+</div>
+
+<!-- Admin: Seans Oluştur Modalı -->
+
+{% block scripts %}
+<script>
+// ÜYE: Rezervasyon - Form doğrudan submit edilsin
+// JavaScript event listener'ları kaldırıldı, formlar normal şekilde çalışacak
+// CSRF token eklendi, artık form doğrudan sunucuya gönderilecek
+
+// ADMIN: Seans bilgi modal
+const infoModal = document.getElementById('sessionInfoModal');
+const createModal = document.getElementById('createModal');
+
+if (document.querySelectorAll('.admin-session-btn').length) {
+  document.querySelectorAll('.admin-session-btn').forEach(card => {
+    card.addEventListener('click', async () => {
+      const sid = card.dataset.info;
+      const r = await fetch(`/api/session/${sid}/details`);
+      const d = await r.json();
+      document.getElementById('mTitle').textContent = new Date(d.start_at).toLocaleString('tr-TR');
+      document.getElementById('mCap').textContent = d.capacity;
+      document.getElementById('mRem').textContent = d.remaining;
+      const ul = document.getElementById('mParts'); ul.innerHTML = '';
+      d.participants.forEach(n => { const li = document.createElement('li'); li.textContent = n; ul.appendChild(li); });
+      infoModal.classList.remove('hidden'); infoModal.classList.add('flex');
+    });
+  });
+}
+
+// ADMIN: Boş slotlara event listener ekle (yeniden kullanılabilir fonksiyon)
+
+// ADMIN: seans butonlarına event listener ekle
+function setupSessionButtonListeners() {
+  if (document.querySelectorAll('.admin-session-btn').length) {
+    document.querySelectorAll('.admin-session-btn').forEach(card => {
+      card.addEventListener('click', async () => {
+        const sid = card.dataset.info;
+        const r = await fetch(`/api/session/${sid}/details`);
+        const d = await r.json();
+        document.getElementById('mTitle').textContent = new Date(d.start_at).toLocaleString('tr-TR');
+        document.getElementById('mCap').textContent = d.capacity;
+        document.getElementById('mRem').textContent = d.remaining;
+        const ul = document.getElementById('mParts'); ul.innerHTML = '';
+        d.participants.forEach(n => { const li = document.createElement('li'); li.textContent = n; ul.appendChild(li); });
+        infoModal.classList.remove('hidden'); infoModal.classList.add('flex');
+      });
+    });
+  }
+}
+
+// İlk yükleme için event listener'ları ayarla
+setupSessionButtonListeners();
+
+// Form submit işlemi sırasında oluşabilecek hataları göster
+function showError(message) {
+  alert(`Hata: ${message}`);
+  console.error('Form gönderim hatası:', message);
+}
+
+// Debug için form verilerini konsola yaz
+function logFormData(data) {
+  console.log('Form gönderiliyor:', data);
+}
+
+// Modal kapat
+if (document.querySelectorAll('[data-close]').length) {
+  document.querySelectorAll('[data-close]').forEach(b =>
+    b.addEventListener('click', () => b.closest('.fixed').classList.add('hidden'))
+  );
+}
+
+// Form submit → /admin/sessions POST
+async function refreshCalendarGrid() {
+  const gridDiv = document.getElementById('calendarGrid');
+  const weekStart = gridDiv?.dataset?.weekStart || '';
+  const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+  
+  try {
+    const res = await fetch(`/calendar/grid?week_start=${weekStart}`, {
+      headers: {
+        'X-CSRFToken': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    });
+    
+    if (!res.ok) {
+      console.error('Takvim grid yüklenemedi:', res.status);
+      alert('Takvim yenilenemedi. Sayfa yenileniyor...');
+      window.location.reload();
+      return;
+    }
+    
+    const html = await res.text();
+    gridDiv.innerHTML = html;
+    
+    // Yeni grid elementlerine event listener'ları yeniden bağla
+    setupEmptySlotListeners();
+    setupSessionButtonListeners();
+  } catch (err) {
+    console.error('Takvim güncelleme hatası:', err);
+    alert('Takvim güncellenirken bir hata oluştu.');
+  }
+}
+
+if (document.getElementById('createForm')) {
+}
+
+// Modalları kapat
+[infoModal, createModal].forEach(m => m?.addEventListener('click', e => { if (e.target === m) m.classList.add('hidden'); }));
+</script>
+{% endblock %}

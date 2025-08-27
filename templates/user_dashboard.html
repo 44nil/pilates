@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% block title %}Panel · Pilates Studio{% endblock %}
+
+{% block content %}
+
+<!-- Özet Kartları -->
+
+<div class="flex flex-row gap-6 w-full">
+  <!-- Aktif Rezervasyonlarım -->
+  <div class="w-1/2 min-w-[340px] rounded-[22px] border border-white/55 bg-white/65 backdrop-blur-xl p-6 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold text-lg">Aktif Rezervasyonlarım</h2>
+      <a href="{{ url_for('list_sessions') }}" class="text-sm underline">Tüm seanslar →</a>
+    </div>
+    <div class="space-y-3">
+      ...existing code...
+    </div>
+  </div>
+
+  <!-- Yaklaşan Seanslar -->
+  <div class="w-1/2 min-w-[340px] rounded-[22px] border border-white/55 bg-white/65 backdrop-blur-xl p-6 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
+    <h2 class="font-semibold text-lg mb-3">Yaklaşan Seanslar</h2>
+    <div class="space-y-3">
+      ...existing code...
+    </div>
+  </div>
+</div>
+      <h2 class="font-semibold text-lg">Aktif Rezervasyonlarım</h2>
+      <a href="{{ url_for('list_sessions') }}" class="text-sm underline">Tüm seanslar →</a>
+    </div>
+
+    <div class="space-y-3">
+      {% set gunler = {
+        'Monday': 'Pazartesi',
+        'Tuesday': 'Salı',
+        'Wednesday': 'Çarşamba',
+        'Thursday': 'Perşembe',
+        'Friday': 'Cuma',
+        'Saturday': 'Cumartesi',
+        'Sunday': 'Pazar'
+      } %}
+
+      <div class="overflow-x-auto">
+      <div class="overflow-x-auto">
+        <div id="week-table-container">
+          {# current_week_index artık Python tarafından geliyor #}
+          <div class="flex items-center justify-between mb-2 w-full">
+            <button id="prevWeekBtn" class="px-3 py-2 rounded-xl bg-stone-100 text-stone-600 shadow hover:shadow-md" onclick="showWeek(-1)">&lt;</button>
+            <div id="weekLabel" class="font-semibold text-base text-violet-700">{{ grouped_reservations[current_week_index].week }}</div>
+            <button id="nextWeekBtn" class="px-3 py-2 rounded-xl bg-stone-100 text-stone-600 shadow hover:shadow-md" onclick="showWeek(1)">&gt;</button>
+          </div>
+          <div id="weekReservations">
+      <div class="w-full flex flex-row flex-nowrap gap-4 overflow-x-auto pb-2" style="display:flex !important;">
+              {% for r in grouped_reservations[current_week_index].reservations %}
+        <div class="rounded-xl bg-white ring-1 ring-stone-200 shadow p-3 w-[260px] flex-shrink-0 flex flex-col items-start justify-between" style="min-width:260px;max-width:320px;display:flex !important;">
+                  <div class="font-medium mb-1">
+                    <span class="px-2 py-0.5 rounded-full bg-rose-200 text-rose-700 text-[13px] font-semibold mr-1">
+                      {{ gunler[r.session_day] }}
+                    </span>
+                    <span class="text-stone-700 font-medium">{{ r.session_time }}</span>
+                    <span class="ml-1 px-2 py-0.5 rounded bg-stone-100 text-stone-600 text-[13px]">{{ r.session_date }}</span>
+                  </div>
+                  <div class="text-xs text-stone-500 mb-1">{{ r.session_notes or '—' }}</div>
+                  {% if r.cancel_status == 'pending' %}
+                    <span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">İptal beklemede</span>
+                  {% elif r.cancel_status == 'approved' %}
+                    <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900">İptal onaylandı</span>
+                  {% elif r.cancel_status == 'rejected' %}
+                    <span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-200 text-rose-900">İptal reddedildi</span>
+                  {% endif %}
+                  <div class="flex gap-2 mt-2">
+                    <button type="button"
+                      class="px-3 py-2 rounded-xl shadow text-sm {% if r.cancel_status == 'pending' %} bg-stone-200 cursor-not-allowed opacity-60 {% else %} bg-amber-100 text-amber-900 hover:shadow-md {% endif %}"
+                      {% if r.cancel_status == 'pending' %}disabled{% else %}onclick="document.getElementById('cancelModal-{{ r.id }}').classList.remove('hidden')"{% endif %}>
+                      İptal Et
+                    </button>
+                    <a href="{{ url_for('move', reservation_id=r.id) }}"
+                      class="px-3 py-2 rounded-xl bg-blue-100 text-blue-700 shadow text-sm hover:shadow-md">
+                      Saat Değiştir
+                    </a>
+                  </div>
+                  <div id="cancelModal-{{ r.id }}" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                    <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-lg">
+                      <h3 class="font-semibold mb-2">İptal Talebi</h3>
+                      <p class="text-sm text-stone-600 mb-3">Lütfen iptal sebebinizi yazın. Talebiniz eğitmen tarafından onaylandığında geçerli olacaktır.</p>
+                      <form method="post" action="{{ url_for('cancel_request', reservation_id=r.id) }}" class="space-y-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <textarea name="reason" required class="w-full border rounded-xl p-3" rows="3" placeholder="İptal sebebi..."></textarea>
+                        <div class="flex items-center justify-end gap-2">
+                          <button type="button" class="px-3 py-2 rounded-xl bg-stone-100" onclick="document.getElementById('cancelModal-{{ r.id }}').classList.add('hidden')">Vazgeç</button>
+                          <button class="px-3 py-2 rounded-xl bg-rose-200 shadow">İptal Talebi Gönder</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+      <script>
+  let currentWeek = parseInt('{{ current_week_index|default(0) }}');
+        const weekGroups = JSON.parse('{{ grouped_reservations|tojson|safe }}');
+        function showWeek(offset) {
+          currentWeek += offset;
+          if (currentWeek < 0) currentWeek = 0;
+          if (currentWeek >= weekGroups.length) currentWeek = weekGroups.length - 1;
+          document.getElementById('weekLabel').innerText = weekGroups[currentWeek].week;
+          // Rezervasyonları güncelle
+          let html = '';
+          for (const r of weekGroups[currentWeek].reservations) {
+            html += `<div class='rounded-xl bg-white ring-1 ring-stone-200 shadow p-3 min-w-[220px]'>` +
+              `<div class='font-medium mb-1'>` +
+              `<span class='px-2 py-0.5 rounded-full bg-rose-200 text-rose-700 text-[13px] font-semibold mr-1'>${r.session_day || ''}</span>` +
+              `<span class='text-stone-700 font-medium'>${r.session_time || ''}</span>` +
+              `<span class='ml-1 px-2 py-0.5 rounded bg-stone-100 text-stone-600 text-[13px]'>${r.session_date || ''}</span>` +
+              `</div>` +
+              `<div class='text-xs text-stone-500 mb-1'>${r.session_notes || '—'}</div>` +
+              `</div>`;
+          }
+          document.getElementById('weekReservations').innerHTML = `<div class='flex flex-wrap gap-3'>${html}`;
+        }
+      </script>
+    </div>
+  </div>
+
+  <!-- Yaklaşan Seanslar -->
+  <div class="rounded-[22px] border border-white/55 bg-white/65 backdrop-blur-xl p-6 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
+    <h2 class="font-semibold text-lg mb-3">Yaklaşan Seanslar</h2>
+
+    <div class="space-y-3">
+      {% for s in upcoming[:3] %}
+      <div class="rounded-2xl bg-white/85 ring-1 ring-white/60 shadow-inner p-4 flex items-center justify-between gap-4">
+        <div>
+          {% set gunler = {
+              'Monday': 'Pazartesi',
+              'Tuesday': 'Salı',
+              'Wednesday': 'Çarşamba',
+              'Thursday': 'Perşembe',
+              'Friday': 'Cuma',
+              'Saturday': 'Cumartesi',
+              'Sunday': 'Pazar'
+          } %}
+          <div class="font-medium">
+            <span class="px-2 py-0.5 rounded-full bg-rose-200 text-rose-700 text-[13px] font-semibold mr-1">
+              {{ gunler[s.date.strftime('%A')] }}
+            </span>
+            <span class="text-stone-700 font-medium">{{ s.time.strftime('%H:%M') }}</span>
+            <span class="ml-1 px-2 py-0.5 rounded bg-stone-100 text-stone-600 text-[13px]">{{ s.date.strftime('%d.%m.%Y') }}</span>
+          </div>
+          <div class="text-xs text-stone-500">Kapasite: {{ s.capacity }} · Kalan: {{ s.spots_left }}</div>
+        </div>
+        <form method="post" action="{{ url_for('reserve', session_id=s.id) }}">
+          <button class="px-3 py-2 rounded-xl bg-[var(--lav)] shadow text-sm hover:shadow-md
+                        {% if s.spots_left==0 %} opacity-60 cursor-not-allowed {% endif %} bg-emerald-100 text-emerald-900"
+      {% if s.spots_left==0 %}disabled{% endif %}>
+    Katıl
+      </button>
+        </form>
+      </div>
+      {% endfor %}
+      {% if upcoming|length > 3 %}
+        <div class="flex justify-center mt-4">
+          <a href="{{ url_for('list_sessions') }}" class="px-4 py-2 rounded-xl bg-stone-100 text-sm shadow hover:shadow-md">Tümünü Gör</a>
+        </div>
+      {% elif upcoming|length == 0 %}
+        <div class="text-sm text-stone-600">Seans bulunamadı.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

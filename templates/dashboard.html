@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block head_extra %}
+<!-- GPTHOOK:dashboard-css START -->
+<style>
+/* (Tailwind yoksa) Claude tasarımının kompakt CSS’i – gerektiğinde mevcut CSS ile yan yana çalışır */
+</style>
+<!-- GPTHOOK:dashboard-css END -->
+{% endblock %}
+
+{% set gunler = {
+  'Monday': 'Pazartesi',
+  'Tuesday': 'Salı',
+  'Wednesday': 'Çarşamba',
+  'Thursday': 'Perşembe',
+  'Friday': 'Cuma',
+  'Saturday': 'Cumartesi',
+  'Sunday': 'Pazar'
+} %}
+
+{% set gunler_kisa = {
+  'Mon': 'Pzt',
+  'Tue': 'Sal',
+  'Wed': 'Çar',
+  'Thu': 'Per',
+  'Fri': 'Cum',
+  'Sat': 'Cmt',
+  'Sun': 'Paz'
+} %}
+
+{% block content %}
+<!-- GPTHOOK:dashboard-markup START -->
+<div class="container">
+  <header class="header">
+    <div class="logo"><div class="logo-circle">🧘‍♀️</div><div class="logo-text">Pilates Studio</div></div>
+    <nav class="nav">
+      <a href="#" class="nav-item">{{ user_name }}</a>
+      <a href="{{ url_for('dashboard_bp.dashboard') }}" class="nav-item">Takvim</a>
+      <a href="#" class="nav-item">Seanslarım</a>
+      <a href="#" class="nav-item">Çıkış</a>
+    </nav>
+  </header>
+
+  <div class="main-content">
+    <div class="left-section">
+      <div class="quick-actions">
+        <div class="action-card"><h3>Aktif Rezervasyonlarım</h3><p>Haftalık düzende görüntüle</p></div>
+        <div class="action-card"><h3>Yeni Rezervasyon</h3><p>Uygun seansları keşfet</p></div>
+      </div>
+
+      <div class="reservations-section">
+        <div class="section-title"><span>Aktif Rezervasyonlarım</span><a href="#" class="view-all">Tüm seanslar →</a></div>
+
+        <div class="week-selector">
+          {% for w in weeks %}
+            <div class="week-tab {{ 'active' if w.active }}" onclick="showWeek('{{ w.key }}', this)">{{ w.label }}</div>
+          {% endfor %}
+        </div>
+
+        {% for w in weeks %}
+        <div id="{{ w.key }}" class="week-content {{ 'active' if w.active }}">
+          <div class="week-grid">
+            {% if w.days %}
+              {% for day, items in w.days.items() %}
+              <div class="day-column">
+                <div class="day-header">{{ gunler[day.strftime('%A')] }}, {{ day.strftime('%d %B') }}</div>
+                {% for s in items %}
+                  {% set cap = s.capacity %}
+                  {% set res_list = s.reservations %}
+                  {% set reserved = res_list|length %}
+                  {% set full = (cap and reserved >= cap) %}
+                  {% set time_val = s.time.strftime('%H:%M') if s.time else '' %}
+                  <div class="session-item">
+                    <div class="session-time">{{ time_val }}</div>
+                    <div class="session-status {{ 'status-full' if full else 'status-available' }}">{{ 'Dolu' if full else 'Müsait' }}</div>
+                    <button class="join-button" data-session-id="{{ s.id }}" onclick="joinSession(event)">Katıl</button>
+                  </div>
+                {% endfor %}
+              </div>
+              {% endfor %}
+            {% else %}
+              <p>Bu haftada seans bulunamadı.</p>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="right-section">
+      <h2 class="section-title">Yaklaşan Seanslar</h2>
+      <div class="upcoming-sessions">
+        {% for s in upcoming %}
+        {% set cap = s.capacity %}
+        {% set res_list = s.reservations %}
+        {% set reserved = res_list|length %}
+        {% set kalan = (cap - reserved) if cap else '-' %}
+        {% set date_val = s.date.strftime('%d.%m.%Y') if s.date else '' %}
+        {% set time_val = s.time.strftime('%H:%M') if s.time else '' %}
+        <div class="session-card">
+          <div class="session-day">{{ gunler[s.date.strftime('%A')] if s.date else '' }}</div>
+          <div class="session-details"><div><div class="session-time-main">{{ time_val }}</div><div class="session-date">{{ date_val }}</div></div></div>
+          <div class="session-capacity">Kapasite: {{ cap or '-' }} · Kalan: {{ kalan }}</div>
+          <button class="join-button" data-session-id="{{ s.id }}" onclick="joinSession(event)">Katıl</button>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="show-all-btn"><button>Tümünü Gör</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showWeek(weekId, elem){
+  document.querySelectorAll('.week-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById(weekId).classList.add('active');
+  document.querySelectorAll('.week-tab').forEach(t=>t.classList.remove('active'));
+  elem.classList.add('active');
+}
+async function joinSession(ev){
+  const btn = ev.currentTarget;
+  const id = btn.getAttribute('data-session-id');
+  btn.disabled = true;
+  try{
+    const url = "{{ url_for('dashboard_bp.join_session', session_id=0) }}".replace('0', id);
+    const res = await fetch(url, { method:'POST', headers:{ 'X-Requested-With':'XMLHttpRequest' }});
+    const data = await res.json(); alert(data.message || 'İşlem tamam.');
+  }catch(e){ alert('Bir hata oluştu.'); }
+  finally{ btn.disabled = false; }
+}
+</script>
+<!-- GPTHOOK:dashboard-markup END -->
+{% endblock %}
