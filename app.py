@@ -984,6 +984,43 @@ def sessions_calendar():
 
 # =====================[ CALENDAR INTEGRATION - END ]=====================
 
+# Admin için seans detay API endpoint'i
+@app.route('/api/session/<int:session_id>/details', methods=['GET'])
+@admin_required
+def get_session_details_api(session_id):
+    """Admin için seans detaylarını döndürür"""
+    session = Session.query.get_or_404(session_id)
+
+    # Seansa katılan üyeler
+    reservations = Reservation.query.filter(
+        Reservation.session_id == session_id
+    ).all()
+
+    participants = []
+    for res in reservations:
+        status_text = {
+            'active': 'Aktif',
+            'canceled': 'İptal',
+            'moved': 'Taşındı',
+            'attended': 'Katıldı',
+            'no_show': 'Gelmedi'
+        }.get(res.status, res.status)
+        participants.append(f"{res.user_name} ({status_text})")
+
+    # Kalan yer hesapla
+    remaining = session.capacity - len(reservations)
+
+    # Tarih ve saati birleştir
+    start_at = datetime.combine(session.date, session.time).isoformat()
+
+    return jsonify({
+        'start_at': start_at,
+        'capacity': session.capacity,
+        'remaining': remaining,
+        'participants': participants,
+        'notes': session.notes or ''
+    })
+
 ## create_session_and_join importunu globalden kaldırdık
 ## admin_completed_sessions ve get_session_details importunu globalden kaldırdık
 

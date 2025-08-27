@@ -46,12 +46,15 @@
               <div class="rounded-xl p-2 shadow-lg mb-2 last:mb-0 relative
                           {% if left == 0 %} bg-gray-200 text-gray-600 cursor-not-allowed
                           {% elif s.user_joined %} bg-emerald-300/80 ring-1 ring-white/60
-                          {% elif s.is_reserved %} bg-amber-300/80 ring-1 ring-white/60
                           {% else %} bg-gradient-to-r from-rose-300 to-violet-300
                           {% endif %}">
                 <div class="text-xs font-semibold flex items-center justify-between">
                   <span>{{ time_key }}</span>
-                  <span class="text-[11px] opacity-80">{{ s.capacity }} kap · {{ left }} kal</span>
+                  <span class="text-[11px] opacity-80">
+                    {% if left == 0 %}
+                      <span class="text-red-600 font-bold">DOLU</span>
+                    {% endif %}
+                  </span>
                 </div>
                 {% if role == 'member' %}
                   {% if left > 0 %}
