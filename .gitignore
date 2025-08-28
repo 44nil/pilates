@@ -4,4 +4,7 @@ __pycache__/
 instance/
 *.db
 migrations/versions/
+.env
+.env.local
+.env.*.local
 
