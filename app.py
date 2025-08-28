@@ -27,6 +27,8 @@ migrate = Migrate(app, db)
 # Blueprint'leri kaydet
 from routes.completed_sessions import completed_sessions_bp
 app.register_blueprint(completed_sessions_bp)
+from routes.calendar_member import calendar_member_bp
+app.register_blueprint(calendar_member_bp)
 from services.activity import build_attendance_weeks
 
 from decorators import login_required, admin_required
@@ -854,6 +856,11 @@ def admin_members():
 @admin_required
 def admin_members_delete(member_id):
     m = Member.query.get_or_404(member_id)
+
+    # Önce üyeye ait tüm ölçümleri sil (foreign key constraint hatası önlemek için)
+    Measurement.query.filter_by(member_id=member_id).delete()
+
+    # Sonra üyeyi sil
     db.session.delete(m)
     db.session.commit()
     flash('Üye silindi.', 'success')
