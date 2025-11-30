@@ -1,5 +1,7 @@
-from datetime import date, datetime, time as dtime, timedelta
 import os
+import traceback
+
+from datetime import date, datetime, time as dtime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, session as flask_session, flash, g, abort, jsonify
 from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import and_, func
@@ -9,7 +11,10 @@ from flask_migrate import Migrate
 
 load_dotenv()
 
-# Flask uygulamasını oluştur
+# =========================
+# 2) UYGULAMA OLUŞTURMA ve AYARLAR
+# =========================
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-change-me')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///pilates.db')
@@ -34,7 +39,12 @@ from services.activity import build_attendance_weeks
 from decorators import login_required, admin_required
 
 
-# ——— Helper Fonksiyonlar ———
+# =========================
+# 5) ROUTE'LAR
+# =========================
+
+# --- 5.1 Admin Ölçüm (Measurement) Rotaları ---
+
 
 # Ölçüm silme (admin)
 @app.route('/admin/delete-measurement', methods=['POST'])
@@ -57,7 +67,7 @@ def delete_measurement():
                                items=items, member_id=member_id, show_delete=True)
     return redirect(url_for("admin_dashboard"))
 from datetime import datetime
-import traceback
+
 
 @app.route('/admin/add-measurement', methods=['GET', 'POST'])
 @admin_required
@@ -116,6 +126,9 @@ def admin_measurement_list():
     return render_template('admin_measurement_list.html', members=members, measurements=measurements, selected_id=selected_id)
 # Model tanımlamaları models.py dosyasına taşınmıştır
 
+
+# --- 5.2 Yardımcı Fonksiyonlar (Takvim / Otomatik Rezervasyon) ---
+ 
 def auto_reserve(session, member_ids):
     """Belirtilen üyeleri otomatik olarak seansa kaydet"""
     if not member_ids:
@@ -182,6 +195,9 @@ def mark_user_joined(sessions, member_name: str | None):
     return sessions
   
 
+# --- 5.3 before_request Hook'ları ---
+
+
 @app.before_request
 def inject_member_name():
     # Üye adını bir yerde set ediyorsan (login, form vb.) session'a kaydet:
@@ -224,7 +240,7 @@ def close_past_sessions_and_apply_attendance():
 
 
 
-# Dekoratörler decorators.py dosyasına taşınmıştır
+# --- 5.4 Auth (Giriş / Çıkış) Rotaları ---
 
 # ——— Routes: Auth ———
 @app.route('/')
@@ -261,7 +277,10 @@ def logout():
     flash('Çıkış yapıldı.', 'info')
     return redirect(url_for('login'))
 
-# ——— Routes: User ———
+
+# --- 5.5 Kullanıcı (User) Rotaları ---
+
+
 @app.route('/dashboard')
 @login_required
 def user_dashboard():
@@ -476,7 +495,8 @@ def move(reservation_id):
     )
     return render_template('move.html', reservation=r, candidates=candidates)
 
-# --- admin iptal ----
+# --- 5.6 Admin Rezervasyon / İptal Rotaları ---
+
 
 @app.route('/admin/reservations/<int:reservation_id>/cancel_refund', methods=['POST'])
 @admin_required
@@ -534,9 +554,8 @@ def cancel_request(reservation_id):
 
 
 
+# --- 5.7 Admin Giriş ve Dashboard ---
 
-
-# ——— Routes: Admin ———
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
@@ -577,7 +596,9 @@ def admin_dashboard():
                            members=members)
 
 
-# app.py
+# --- 5.8 Admin İptal Talebi (Cancel Request) Yönetimi ---
+
+
 @app.route('/admin/cancel-requests')
 @admin_required
 def admin_cancel_requests():
@@ -629,11 +650,7 @@ def admin_cancel_reject(rid):
 
 
 
-# ...
-
-# app.py
-# ... diğer importlar: db, Session, Reservation, Member, admin_required, etc.
-
+# --- 5.9 Admin Seans Yönetimi ---
 
 
 @app.route('/admin/sessions', methods=['GET', 'POST'])
@@ -829,6 +846,10 @@ def admin_participants(session_id):
     parts = Reservation.query.filter_by(session_id=session_id).order_by(Reservation.created_at.asc()).all()
     return render_template('admin_participants.html', s=s, parts=parts)
 
+
+# --- 5.10 Admin Üye Yönetimi ---
+
+
 @app.route('/admin/members', methods=['GET', 'POST'])
 @admin_required
 def admin_members():
@@ -877,6 +898,8 @@ def admin_members_adjust_credits(member_id):
     return redirect(url_for('admin_members'))
 
 # =====================[ CALENDAR INTEGRATION - START ]=====================
+
+# --- 5.11 Takvim (Calendar) Rotaları ---
 
 
 # AJAX takvim grid endpoint
@@ -991,6 +1014,8 @@ def sessions_calendar():
 
 # =====================[ CALENDAR INTEGRATION - END ]=====================
 
+# --- 5.12 Admin API Rotaları ---
+
 # Admin için seans detay API endpoint'i
 @app.route('/api/session/<int:session_id>/details', methods=['GET'])
 @admin_required
@@ -1032,6 +1057,8 @@ def get_session_details_api(session_id):
 ## admin_completed_sessions ve get_session_details importunu globalden kaldırdık
 
 
+# --- 5.13 Kullanıcı Profil Rotası ---
+
 
 @app.route('/profile')
 @login_required
@@ -1048,7 +1075,7 @@ def profile():
     return render_template('profile.html', member=member, measurements=measurements, weeks=weeks)
 
 
-# app.py
+# --- 5.14 Komut Satırı / Yardımcı Fonksiyonlar ---
 
 if __name__ == '__main__':
     app.run(debug=True)
