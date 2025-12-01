@@ -1,4 +1,7 @@
-<form action="{{ url_for('add_measurement') }}" method="POST" class="space-y-3" id="addMeasurementForm">
+<form action="{{ url_for('admin_measurements.add_measurement') }}"
+      method="POST"
+      class="space-y-3"
+      id="addMeasurementForm">
   {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
   <input type="hidden" name="member_id" value="{{ member_id }}">
   <div><label>Tarih</label><input name="date" type="date" required class="input"></div>

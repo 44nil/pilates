@@ -32,11 +32,19 @@ migrate = Migrate(app, db)
 # Blueprint'leri kaydet
 from routes.completed_sessions import completed_sessions_bp
 app.register_blueprint(completed_sessions_bp)
+
 from routes.calendar_member import calendar_member_bp
 app.register_blueprint(calendar_member_bp)
-from services.activity import build_attendance_weeks
 
+from services.activity import build_attendance_weeks
 from decorators import login_required, admin_required
+
+from routes.admin_cancel_requests import admin_cancel_requests_bp
+app.register_blueprint(admin_cancel_requests_bp)
+
+from routes.admin_measurements import admin_measurements_bp
+app.register_blueprint(admin_measurements_bp)
+
 
 
 # =========================
@@ -46,85 +54,6 @@ from decorators import login_required, admin_required
 # --- 5.1 Admin Ölçüm (Measurement) Rotaları ---
 
 
-# Ölçüm silme (admin)
-@app.route('/admin/delete-measurement', methods=['POST'])
-@admin_required
-def delete_measurement():
-    mid = request.form.get("measurement_id", type=int)
-    member_id = request.form.get("member_id", type=int)
-    if not mid or not member_id:
-        return "measurement_id and member_id required", 400
-    m = Measurement.query.get(mid)
-    if not m or m.member_id != member_id:
-        abort(404)
-    db.session.delete(m); db.session.commit()
-    # AJAX ise güncel tablo partial'ını döndür
-    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        items = (Measurement.query
-                 .filter_by(member_id=member_id)
-                 .order_by(Measurement.date.desc()).all())
-        return render_template("partials/_measurement_table.html",
-                               items=items, member_id=member_id, show_delete=True)
-    return redirect(url_for("admin_dashboard"))
-from datetime import datetime
-
-
-@app.route('/admin/add-measurement', methods=['GET', 'POST'])
-@admin_required
-def add_measurement():
-    try:
-        if request.method == 'POST':
-            print("Form Data:", request.form)
-            member_id = request.form.get('member_id', type=int)
-            date_str = request.form.get('date')
-            date_val = datetime.strptime(date_str, "%Y-%m-%d").date() if date_str else None
-            weight = request.form.get('weight', type=float)
-            waist = request.form.get('waist', type=float)
-            hip = request.form.get('hip', type=float)
-            chest = request.form.get('chest', type=float)
-
-            if not member_id:
-                return "member_id required", 400
-
-            m = Measurement(
-                member_id=member_id,
-                date=date_val,
-                weight=weight,
-                waist=waist,
-                hip=hip,
-                chest=chest
-            )
-            db.session.add(m)
-            db.session.commit()
-
-            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-                items = Measurement.query.filter_by(member_id=member_id).order_by(Measurement.date.desc()).all()
-                return render_template("partials/_measurement_table.html", items=items, show_delete=True)
-
-            return redirect(url_for("admin_dashboard"))
-
-        # GET
-        member_id = request.args.get("member_id", type=int)
-        return render_template("partials/_measurement_form.html", member_id=member_id)
-
-    except Exception as e:
-        print("ERROR:", e)
-        traceback.print_exc()
-        return f"Error: {e}", 500
-
-# Ölçüm listeleme (admin)
-@app.route('/admin/measurement-list', methods=['GET'])
-@admin_required
-def admin_measurement_list():
-    members = Member.query.order_by(Member.full_name.asc()).all()
-    member_id = request.args.get('member_id', type=int)
-    measurements = []
-    selected_id = None
-    if member_id:
-        measurements = Measurement.query.filter_by(member_id=member_id).order_by(Measurement.date.desc()).all()
-        selected_id = member_id
-    return render_template('admin_measurement_list.html', members=members, measurements=measurements, selected_id=selected_id)
-# Model tanımlamaları models.py dosyasına taşınmıştır
 
 
 # --- 5.2 Yardımcı Fonksiyonlar (Takvim / Otomatik Rezervasyon) ---
@@ -594,60 +523,6 @@ def admin_dashboard():
                            today_cap=today_cap,
                            pending_count=pending_count,
                            members=members)
-
-
-# --- 5.8 Admin İptal Talebi (Cancel Request) Yönetimi ---
-
-
-@app.route('/admin/cancel-requests')
-@admin_required
-def admin_cancel_requests():
-    pending = (
-        Reservation.query
-        .filter_by(cancel_status='pending')
-        .join(Session)
-        .order_by(Session.date.asc(), Session.time.asc())
-        .all()
-    )
-    return render_template('admin_cancel_requests.html', pending=pending)
-
-
-
-# app.py
-@app.route('/admin/cancel-requests/<int:rid>/approve', methods=['POST'])
-@admin_required
-def admin_cancel_approve(rid):
-    r = Reservation.query.get_or_404(rid)
-    if r.cancel_status != 'pending':
-        flash('Talep durumu uygun değil.', 'error')
-        return redirect(url_for('admin_cancel_requests'))
-
-    # Rezervasyonu iptal et + yer aç
-    if r.status == 'active':
-        r.status = 'canceled'
-        if not r.session.is_past and r.session.spots_left < r.session.capacity:
-            r.session.spots_left += 1
-
-    r.cancel_status = 'approved'
-    db.session.commit()
-    flash('İptal onaylandı.', 'success')
-    return redirect(url_for('admin_cancel_requests'))
-
-
-
-@app.route('/admin/cancel-requests/<int:rid>/reject', methods=['POST'])
-@admin_required
-def admin_cancel_reject(rid):
-    r = Reservation.query.get_or_404(rid)
-    if r.cancel_status != 'pending':
-        flash('Talep durumu uygun değil.', 'error')
-        return redirect(url_for('admin_cancel_requests'))
-
-    r.cancel_status = 'rejected'
-    db.session.commit()
-    flash('İptal talebi reddedildi.', 'info')
-    return redirect(url_for('admin_cancel_requests'))
-
 
 
 # --- 5.9 Admin Seans Yönetimi ---
