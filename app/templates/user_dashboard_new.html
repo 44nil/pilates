@@ -27,7 +27,7 @@
   <div class="w-full sm:w-1/2 rounded-[22px] border border-white/55 bg-white/65 backdrop-blur-xl p-2 sm:p-3 md:p-4 lg:p-6 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
     <div class="flex items-center justify-between mb-2 sm:mb-3">
       <h2 class="font-semibold text-base sm:text-lg">Aktif Rezervasyonlarım</h2>
-      <a href="{{ url_for('list_sessions') }}" class="text-xs sm:text-sm underline">Tüm seanslar →</a>
+      <a href="{{ url_for('user.list_sessions') }}" class="text-xs sm:text-sm underline">Tüm seanslar →</a>
     </div>
     <div class="space-y-2 md:space-y-3">
       {% set gunler = {
@@ -73,7 +73,7 @@
                         {% if r.cancel_status == 'pending' %}disabled{% else %}onclick="document.getElementById('cancelModal-{{ r.id }}').classList.remove('hidden')"{% endif %}>
                         İptal Et
                       </button>
-                      <a href="{{ url_for('move', reservation_id=r.id) }}"
+                      <a href="{{ url_for('user.move', reservation_id=r.id) }}"
                         class="px-4 py-3 md:px-3 md:py-2 rounded-xl bg-purple-100 text-purple-700 shadow text-sm md:text-sm hover:shadow-md">
                         Saat Değiştir
                       </a>
@@ -82,7 +82,7 @@
                       <div class="w-full max-w-md rounded-2xl bg-white p-4 md:p-5 shadow-lg">
                         <h3 class="font-semibold mb-2 text-lg">İptal Talebi</h3>
                         <p class="text-sm text-stone-600 mb-3">Lütfen iptal sebebinizi yazın. Talebiniz eğitmen tarafından onaylandığında geçerli olacaktır.</p>
-                        <form method="post" action="{{ url_for('cancel_request', reservation_id=r.id) }}" class="space-y-3">
+                        <form method="post" action="{{ url_for('user.cancel_request', reservation_id=r.id) }}" class="space-y-3">
                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                           <textarea name="reason" required class="w-full border rounded-xl p-3 text-base" rows="3" placeholder="İptal sebebi..."></textarea>
                           <div class="flex items-center justify-end gap-2">
@@ -194,7 +194,7 @@
             </div>
             <div class="text-xs text-stone-500">👥 Kapasite: {{ s.capacity }} · Kalan: {{ s.spots_left }}</div>
           </div>
-          <form method="post" action="{{ url_for('reserve', session_id=s.id) }}">
+          <form method="post" action="{{ url_for('user.reserve', session_id=s.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <button class="px-3 py-2 sm:px-4 sm:py-3 md:px-3 md:py-2 rounded-xl bg-purple-100 text-purple-700 shadow text-xs sm:text-sm md:text-sm hover:shadow-md
                           {% if s.spots_left==0 %} opacity-60 cursor-not-allowed {% endif %}"
@@ -206,7 +206,7 @@
       {% endfor %}
       {% if upcoming|length > 3 %}
         <div class="flex justify-center mt-3 sm:mt-4">
-          <a href="{{ url_for('list_sessions') }}" class="px-3 py-2 sm:px-4 sm:py-2 rounded-xl bg-purple-50 text-purple-600 text-xs sm:text-sm shadow hover:shadow-md">Tümünü Gör</a>
+          <a href="{{ url_for('user.list_sessions') }}" class="px-3 py-2 sm:px-4 sm:py-2 rounded-xl bg-purple-50 text-purple-600 text-xs sm:text-sm shadow hover:shadow-md">Tümünü Gör</a>
         </div>
       {% elif upcoming|length == 0 %}
         <div class="text-sm text-stone-600">Seans bulunamadı.</div>
@@ -216,3 +216,5 @@
 </div>
 
 {% endblock %}
+
+  <!-- Kgaliba kullanılan bu -->

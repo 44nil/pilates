@@ -1,9 +1,8 @@
-from flask_sqlalchemy import SQLAlchemy
+from app.extensions import db
 from sqlalchemy import Enum, CheckConstraint
 from datetime import date, datetime, time, timedelta
 from sqlalchemy.orm import validates
 
-db = SQLAlchemy()
 
 ALLOWED_STATUSES = ('active', 'canceled', 'moved', 'attended', 'no_show')
 ALLOWED_CANCEL = ('none', 'pending', 'approved', 'rejected')

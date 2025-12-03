@@ -7,7 +7,7 @@
   <!-- Yeni Seans Ekle -->
   <div class="rounded-[22px] border border-white/55 bg-white/55 backdrop-blur-xl p-6 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
     <h2 class="font-semibold mb-4 text-lg">Yeni Seans Ekle</h2>
-    <form method="post" action="{{ url_for('admin_sessions') }}" class="grid gap-3">
+    <form method="post" action="{{ url_for('admin.sessions') }}" class="grid gap-3">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
       <label class="block">
         <span class="mb-1 block text-sm text-stone-600">Tarih</span>
@@ -87,7 +87,7 @@
     <div class="flex items-center justify-between mb-4">
       <h2 class="font-semibold text-lg">Seanslar</h2>
       <div class="flex items-center gap-2">
-        <a href="{{ url_for('completed_sessions_bp.admin_completed_sessions') }}" class="py-1 px-3 text-xs rounded-full bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 shadow-sm hover:bg-emerald-200 transition">
+        <a href="{{ url_for('admin.completed_sessions') }}" class="py-1 px-3 text-xs rounded-full bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 shadow-sm hover:bg-emerald-200 transition">
           Tamamlanan Seanslar
         </a>
         <span class="text-xs text-stone-500">Toplam: {{ sessions|length }}</span>
@@ -152,9 +152,9 @@
                         {% if s.notes %}<div class="text-sm text-amber-600">{{ s.notes }}</div>{% endif %}
                       </div>
                       <div class="flex items-center gap-2">
-                        <a href="{{ url_for('admin_participants', session_id=s.id) }}" 
+                        <a href="{{ url_for('admin.session_participants', session_id=s.id) }}" 
                            class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">Katılımcılar</a>
-                        <form method="post" action="{{ url_for('admin_delete_session', session_id=s.id) }}"
+                        <form method="post" action="{{ url_for('admin.delete_session', session_id=s.id) }}"
                               onsubmit="return confirm('Seans silinsin mi?')">
                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                           <button class="px-2 py-1 bg-red-100 text-red-700 rounded text-sm">Sil</button>
@@ -192,9 +192,9 @@
                             {% if s.notes %}<div class="text-sm text-purple-600">{{ s.notes }}</div>{% endif %}
                           </div>
                           <div class="flex items-center gap-2">
-                            <a href="{{ url_for('admin_participants', session_id=s.id) }}" 
+                            <a href="{{ url_for('admin.session_participants', session_id=s.id) }}" 
                               class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">Katılımcılar</a>
-                            <form method="post" action="{{ url_for('admin_delete_session', session_id=s.id) }}"
+                            <form method="post" action="{{ url_for('admin.delete_session', session_id=s.id) }}"
                                   onsubmit="return confirm('Seans silinsin mi?')">
                               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                               <button class="px-2 py-1 bg-red-100 text-red-700 rounded text-sm">Sil</button>

@@ -10,7 +10,7 @@
   <div class="w-1/2 min-w-[340px] rounded-[22px] border border-white/55 bg-white/65 backdrop-blur-xl p-6 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-semibold text-lg">Aktif Rezervasyonlarım</h2>
-      <a href="{{ url_for('list_sessions') }}" class="text-sm underline">Tüm seanslar →</a>
+      <a href="{{ url_for('list.sessions') }}" class="text-sm underline">Tüm seanslar →</a>
     </div>
     <div class="space-y-3">
       ...existing code...
@@ -26,7 +26,7 @@
   </div>
 </div>
       <h2 class="font-semibold text-lg">Aktif Rezervasyonlarım</h2>
-      <a href="{{ url_for('list_sessions') }}" class="text-sm underline">Tüm seanslar →</a>
+      <a href="{{ url_for('list.sessions') }}" class="text-sm underline">Tüm seanslar →</a>
     </div>
 
     <div class="space-y-3">
@@ -162,7 +162,7 @@
       {% endfor %}
       {% if upcoming|length > 3 %}
         <div class="flex justify-center mt-4">
-          <a href="{{ url_for('list_sessions') }}" class="px-4 py-2 rounded-xl bg-stone-100 text-sm shadow hover:shadow-md">Tümünü Gör</a>
+          <a href="{{ url_for('list.sessions') }}" class="px-4 py-2 rounded-xl bg-stone-100 text-sm shadow hover:shadow-md">Tümünü Gör</a>
         </div>
       {% elif upcoming|length == 0 %}
         <div class="text-sm text-stone-600">Seans bulunamadı.</div>

@@ -4,7 +4,6 @@
 {% block content %}
 <div class="grid md:grid-cols-2 gap-6">
   
-  <!-- Yeni Üye Ekle -->
   <div class="rounded-[22px] border border-white/55 bg-white/55 backdrop-blur-xl p-6 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
     <h2 class="font-semibold mb-4 text-lg">Yeni Üye Ekle</h2>
     <form method="post" class="grid gap-3">
@@ -20,40 +19,50 @@
     <p class="text-xs text-stone-500 mt-3">Giriş yalnızca burada kayıtlı isimlerle yapılır.</p>
   </div>
 
-  <!-- Üyeler -->
   <div class="rounded-[22px] border border-white/55 bg-white/55 backdrop-blur-xl p-6 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
     <h2 class="font-semibold mb-4 text-lg">Üyeler</h2>
     <div class="space-y-3">
       {% for m in members %}
       <div class="rounded-2xl bg-white/80 ring-1 ring-white/60 shadow-inner p-4">
+        
         <div class="flex items-center justify-between">
           <div>
             <div class="font-medium">{{ m.full_name }}</div>
             <div class="text-xs text-stone-500">Kalan seans: {{ m.credits }}</div>
           </div>
-          <form method="post" action="{{ url_for('admin_members_delete', member_id=m.id) }}"
+          <form method="post" action="{{ url_for('admin.delete_member', member_id=m.id) }}"
                 onsubmit="return confirm('Silinsin mi?')">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <button class="px-3 py-2 rounded-xl bg-gradient-to-r from-pink-300 to-rose-400 shadow hover:shadow-lg transition">🗑 Sil</button>
           </form>
         </div>
-        <div class="flex flex-wrap gap-2 mt-3">
-          <form method="post" action="{{ url_for('admin_members_adjust_credits', member_id=m.id) }}">
+
+        <div class="flex flex-wrap gap-2 mt-3 items-center">
+          
+          <a href="{{ url_for('admin.member_measurements', member_id=m.id) }}" 
+             class="px-3 py-2 rounded-xl bg-violet-100 text-violet-700 ring-1 ring-violet-200 hover:bg-violet-200 transition text-sm flex items-center gap-1">
+             📏 Ölçümler
+          </a>
+
+          <form method="post" action="{{ url_for('admin.adjust_credits', member_id=m.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="hidden" name="delta" value="1">
-            <button class="px-3 py-2 rounded-xl bg-white/80 ring-1 ring-white/60 shadow hover:bg-white transition">+1</button>
+            <button class="px-3 py-2 rounded-xl bg-white/80 ring-1 ring-white/60 shadow hover:bg-white transition text-sm">+1</button>
           </form>
-          <form method="post" action="{{ url_for('admin_members_adjust_credits', member_id=m.id) }}">
+
+          <form method="post" action="{{ url_for('admin.adjust_credits', member_id=m.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="hidden" name="delta" value="-1">
-            <button class="px-3 py-2 rounded-xl bg-white/80 ring-1 ring-white/60 shadow hover:bg-white transition">-1</button>
+            <button class="px-3 py-2 rounded-xl bg-white/80 ring-1 ring-white/60 shadow hover:bg-white transition text-sm">-1</button>
           </form>
-          <form method="post" action="{{ url_for('admin_members_adjust_credits', member_id=m.id) }}" class="flex gap-2 items-center">
+
+          <form method="post" action="{{ url_for('admin.adjust_credits', member_id=m.id) }}" class="flex gap-2 items-center">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="number" name="delta" placeholder="+/-"
-                   class="rounded-xl bg-white/80 ring-1 ring-white/60 shadow-inner px-3 py-2 w-20 outline-none placeholder-stone-400 focus:ring-rose-300" required>
-            <button class="px-3 py-2 rounded-xl bg-gradient-to-r from-rose-300 to-violet-300 shadow hover:shadow-lg transition">Güncelle</button>
+                   class="rounded-xl bg-white/80 ring-1 ring-white/60 shadow-inner px-2 py-2 w-16 text-sm outline-none placeholder-stone-400 focus:ring-rose-300" required>
+            <button class="px-3 py-2 rounded-xl bg-gradient-to-r from-rose-300 to-violet-300 shadow hover:shadow-lg transition text-sm">Güncelle</button>
           </form>
+
         </div>
       </div>
       {% else %}

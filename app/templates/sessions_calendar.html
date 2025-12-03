@@ -19,9 +19,9 @@
       <div class="text-xs text-stone-500">{{ week_label }}</div>
     </div>
     <div class="flex items-center gap-2">
-      <a href="{{ url_for('sessions_calendar', d=prev_week) }}"
+      <a href="{{ url_for('user.calendar', d=prev_week) }}"
          class="rounded-xl px-3 py-1 ring-1 ring-white/60 bg-white/70 shadow hover:shadow-md">← Önceki</a>
-      <a href="{{ url_for('sessions_calendar', d=next_week) }}"
+      <a href="{{ url_for('user.calendar', d=next_week) }}"
          class="rounded-xl px-3 py-1 ring-1 ring-white/60 bg-white/70 shadow hover:shadow-md">Sonraki →</a>
     </div>
   </div>
