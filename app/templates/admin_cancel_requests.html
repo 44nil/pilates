@@ -1,40 +1,56 @@
 {% extends 'base.html' %}
 {% block title %}İptal Talepleri · Pilates Studio{% endblock %}
-{% block content %}
 
-<div class="rounded-2xl bg-white/70 backdrop-blur-xl p-6 ring-1 ring-white/60 shadow">
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="font-semibold text-lg">İptal Talepleri</h2>
-    <a href="{{ url_for('admin_dashboard') }}" class="text-sm underline">← Panele Dön</a>
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-stone-800">Bekleyen İptal Talepleri</h1>
+    <a href="{{ url_for('admin.dashboard') }}" class="px-4 py-2 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-700 text-sm font-medium transition">
+      ⬅️ Panele Dön
+    </a>
   </div>
 
-  <div class="space-y-3">
-    {% for r in pending %}
-      <div class="rounded-xl bg-white/90 ring-1 ring-white/60 shadow-inner p-4 flex items-start justify-between gap-4">
-        <div>
-          <div class="font-medium">{{ r.user_name }}</div>
-          <div class="text-sm text-stone-600">
-            {{ r.session.date.strftime('%d.%m.%Y') }} · {{ r.session.time.strftime('%H:%M') }}
+  <div class="bg-white/60 backdrop-blur-xl rounded-3xl p-6 shadow-sm border border-white/50">
+    {% if requests %}
+      <div class="space-y-4">
+        {% for r in requests %}
+        <div class="flex flex-col md:flex-row md:items-center justify-between bg-white/80 p-4 rounded-2xl border border-stone-100 shadow-sm gap-4">
+          
+          <div>
+            <div class="font-bold text-stone-800">{{ r.user_name }}</div>
+            <div class="text-sm text-stone-500">
+              📅 {{ r.session.date.strftime('%d.%m.%Y') }} · ⏰ {{ r.session.time.strftime('%H:%M') }}
+            </div>
+            <div class="mt-2 text-sm bg-rose-50 text-rose-700 px-3 py-1 rounded-lg inline-block border border-rose-100">
+              📢 Sebep: "{{ r.cancel_reason }}"
+            </div>
           </div>
-          <div class="mt-2 text-[13px]">
-            <span class="text-stone-500">Sebep:</span> {{ r.cancel_reason or '—' }}
+
+          <div class="flex items-center gap-2">
+            <form action="{{ url_for('admin.handle_cancel_request', req_id=r.id, action='reject') }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="px-4 py-2 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-600 text-sm font-medium transition">
+                Reddet
+              </button>
+            </form>
+
+            <form action="{{ url_for('admin.handle_cancel_request', req_id=r.id, action='approve') }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium shadow-lg hover:shadow-xl transition">
+                ✅ Onayla & İade Et
+              </button>
+            </form>
           </div>
+
         </div>
-        <div class="flex items-center gap-2">
-          <form method="post" action="{{ url_for('admin_cancel_approve', rid=r.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <button class="px-3 py-2 rounded-xl bg-emerald-200 text-emerald-900 shadow">Onayla</button>
-          </form>
-          <form method="post" action="{{ url_for('admin_cancel_reject', rid=r.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <button class="px-3 py-2 rounded-xl bg-rose-200 text-rose-900 shadow">Reddet</button>
-          </form>
-        </div>
+        {% endfor %}
       </div>
     {% else %}
-      <div class="text-sm text-stone-500">Bekleyen iptal talebi yok.</div>
-    {% endfor %}
+      <div class="text-center py-12 text-stone-400">
+        <div class="text-4xl mb-3">✨</div>
+        <p>Bekleyen iptal talebi yok.</p>
+      </div>
+    {% endif %}
   </div>
 </div>
-
 {% endblock %}

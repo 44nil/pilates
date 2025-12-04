@@ -3,8 +3,8 @@ from datetime import datetime
 import traceback
 from sqlalchemy import func  # Eğer func kullanıyorsan
 
-from models import db, Member, Measurement
-from decorators import admin_required
+from app.models import db, Member, Measurement
+from app.decorators import admin_required
 
 admin_measurements_bp = Blueprint(
     "admin_measurements",

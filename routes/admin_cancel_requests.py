@@ -1,8 +1,8 @@
 # routes/admin_cancel_requests.py
 
 from flask import Blueprint, render_template, redirect, url_for, flash
-from models import db, Session, Reservation
-from decorators import admin_required
+from app.models import db, Session, Reservation
+from app.decorators import admin_required
 
 admin_cancel_requests_bp = Blueprint(
     "admin_cancel_requests",

@@ -2,6 +2,7 @@
 {% block title %}Profilim · Pilates Studio{% endblock %}
 {% block content %}
 <div class="max-w-2xl mx-auto mt-8">
+  
   <div class="rounded-2xl bg-white/80 p-6 shadow mb-8">
     <h1 class="text-2xl font-bold mb-2">Profilim</h1>
     {% if member %}
@@ -14,49 +15,93 @@
   </div>
 
   <div class="rounded-2xl bg-white/80 p-6 shadow">
-    <h2 class="text-lg font-semibold mb-3">Ölçümlerim</h2>
-    {% set items = measurements %}
-    {% set is_admin = session.get('is_admin', False) %}
-    {% include 'partials/_measurement_table.html' %}
+    <h2 class="text-lg font-semibold mb-3">Vücut Analizi Geçmişi</h2>
+    
+    {% if measurements %}
+    <div class="overflow-x-auto rounded-xl border border-stone-100">
+      <table class="w-full text-left text-sm text-stone-600">
+        <thead class="bg-stone-50 text-xs uppercase text-stone-500">
+          <tr>
+            <th class="px-4 py-3 font-medium">Tarih</th>
+            <th class="px-4 py-3 font-medium">Kilo</th>
+            <th class="px-4 py-3 font-medium">Bel</th>
+            <th class="px-4 py-3 font-medium">Kalça</th>
+            <th class="px-4 py-3 font-medium">Göğüs</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-stone-100">
+          {% for m in measurements %}
+          <tr class="hover:bg-stone-50/50 transition-colors">
+            <td class="px-4 py-3 font-medium text-stone-800">
+              {{ m.date.strftime('%d.%m.%Y') }}
+            </td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center gap-1 rounded-lg bg-pink-100 px-2 py-1 text-pink-700 font-medium text-xs">
+                {{ m.weight }} kg
+              </span>
+            </td>
+            <td class="px-4 py-3">
+               <span class="inline-flex items-center gap-1 rounded-lg bg-pink-100 px-2 py-1 text-pink-700 font-medium text-xs">
+                {{ m.waist or '-' }} cm
+              </span>
+            </td>
+            <td class="px-4 py-3">
+               <span class="inline-flex items-center gap-1 rounded-lg bg-pink-100 px-2 py-1 text-pink-700 font-medium text-xs">
+                {{ m.hip or '-' }} cm
+              </span>
+            </td>
+            <td class="px-4 py-3">
+               <span class="inline-flex items-center gap-1 rounded-lg bg-pink-100 px-2 py-1 text-pink-700 font-medium text-xs">
+                {{ m.chest or '-' }} cm
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-6 border-2 border-dashed border-stone-200 rounded-xl">
+      <div class="text-2xl mb-2">📉</div>
+      <p class="text-stone-500 text-sm">Henüz kayıtlı ölçümünüz bulunmuyor.</p>
+    </div>
+    {% endif %}
   </div>
 
-  <div class="rounded-2xl border border-white/50 bg-white/60 backdrop-blur p-4 mt-8">
-    <div class="mb-2 text-sm text-stone-500">Son 4 ayda ders katılımı</div>
-    <div class="overflow-x-auto">
-      <div class="heatmap-grid" style="display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); gap: 3px; justify-content: center; margin-bottom: 16px;">
-        {% for week in weeks|reverse %}  {# Haftaları ters sırada göster (en yeni solda) #}
+  <div class="rounded-2xl border border-white/50 bg-white/60 backdrop-blur p-5 mt-8">
+    <div class="mb-3 text-sm font-medium text-stone-600">Son dönem antrenman takibi</div>
+    
+    <div class="overflow-x-auto pb-2">
+      <div class="heatmap-grid" style="display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); gap: 3px; justify-content: center; min-width: max-content;">
+        {% for week in weeks|reverse %}
           {% for day in week %}
-            {% set intensity = day.count | int %}
-            {% if intensity == 0 %}
-              {% set bg_class = 'bg-[#f8f8f8] border border-[#e0e0e0]' %}
-            {% elif intensity == 1 %}
-              {% set bg_class = 'bg-[#ff69b4] opacity-50 border border-[#ff69b4]' %}
-            {% elif intensity == 2 %}
-              {% set bg_class = 'bg-[#ff69b4] opacity-75 border border-[#ff69b4]' %}
+            {% set count = day.count | int %}
+            
+            {% if count > 0 %}
+              {% set bg_color = 'bg-[#db2777]' %} 
             {% else %}
-              {% set bg_class = 'bg-[#ff69b4] border border-[#ff69b4]' %}
+              {% set bg_color = 'bg-[#ebedf0]' %}
             {% endif %}
-            <span class="heatmap-day {{ bg_class }} w-[14px] h-[14px] rounded-sm" 
-                  title="{{ day.date.strftime('%d.%m.%Y') }}: {{ day.count }} katılım"></span>
+
+            <div class="{{ bg_color }} w-[12px] h-[12px] rounded-[2px] border border-black/5 hover:ring-1 hover:ring-stone-400 transition-all cursor-pointer relative group"
+                 title="{{ day.date.strftime('%d.%m.%Y') }}: {{ 'Katıldı' if count > 0 else 'Katılmadı' }}">
+            </div>
           {% endfor %}
         {% endfor %}
       </div>
-      <div class="heatmap-legend flex items-center justify-center gap-4 mt-2 text-xs text-stone-600">
-        <div class="flex items-center gap-1">
-          <span class="w-[12px] h-[12px] bg-[#f0f0f0] inline-block rounded"></span>
-          <span>Katılmadı</span>
-        </div>
-        <div class="flex items-center gap-1">
-          <span class="w-[12px] h-[12px] bg-[#ff69b4] inline-block rounded opacity-50"></span>
-          <span>Az katılım</span>
-        </div>
-        <div class="flex items-center gap-1">
-          <span class="w-[12px] h-[12px] bg-[#ff69b4] inline-block rounded"></span>
-          <span>Çok katılım</span>
-        </div>
+    </div>
+
+    <div class="flex items-center justify-end gap-4 mt-3 text-[10px] text-stone-500">
+      <div class="flex items-center gap-1">
+        <span class="w-[10px] h-[10px] bg-[#ebedf0] rounded-[2px] border border-black/5"></span>
+        <span>Pasif</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <span class="w-[10px] h-[10px] bg-[#db2777] rounded-[2px] border border-black/5"></span>
+        <span>Antrenman Yapıldı</span>
       </div>
     </div>
   </div>
+
 </div>
 {% endblock %}
-

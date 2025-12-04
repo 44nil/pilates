@@ -3,7 +3,6 @@
 
 {% block content %}
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6 mb-4 md:mb-6">
-  <!-- Bu ay katılım -->
   <div class="rounded-[22px] border border-white/55 bg-white/65 backdrop-blur-xl p-3 sm:p-4 md:p-6 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
     <div class="text-xs sm:text-sm text-stone-500">Bu ay katıldığınız ders</div>
     <div class="mt-1 text-xl sm:text-2xl md:text-3xl font-semibold">{{ monthly_attended }}</div>
@@ -13,7 +12,6 @@
     </div>
   </div>
 
-  <!-- Kalan seans hakkı -->
   <div class="rounded-[22px] border border-white/55 bg-white/65 backdrop-blur-xl p-3 sm:p-4 md:p-6 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
     <div class="text-xs sm:text-sm text-stone-500">Kalan seans hakkınız</div>
     <div class="mt-1 text-xl sm:text-2xl md:text-3xl font-semibold">{{ credits_left }}</div>
@@ -21,24 +19,14 @@
   </div>
 </div>
 
-<!-- Aktif Rezervasyonlarım ve Yaklaşan Seanslar -->
 <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 w-full max-w-7xl mx-auto">
-  <!-- Aktif Rezervasyonlarım -->
   <div class="w-full sm:w-1/2 rounded-[22px] border border-white/55 bg-white/65 backdrop-blur-xl p-2 sm:p-3 md:p-4 lg:p-6 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
     <div class="flex items-center justify-between mb-2 sm:mb-3">
       <h2 class="font-semibold text-base sm:text-lg">Aktif Rezervasyonlarım</h2>
       <a href="{{ url_for('user.list_sessions') }}" class="text-xs sm:text-sm underline">Tüm seanslar →</a>
     </div>
     <div class="space-y-2 md:space-y-3">
-      {% set gunler = {
-        'Monday': 'Pazartesi',
-        'Tuesday': 'Salı',
-        'Wednesday': 'Çarşamba',
-        'Thursday': 'Perşembe',
-        'Friday': 'Cuma',
-        'Saturday': 'Cumartesi',
-        'Sunday': 'Pazar'
-      } %}
+      {% set gunler = {'Monday': 'Pazartesi', 'Tuesday': 'Salı', 'Wednesday': 'Çarşamba', 'Thursday': 'Perşembe', 'Friday': 'Cuma', 'Saturday': 'Cumartesi', 'Sunday': 'Pazar'} %}
 
       <div class="overflow-x-auto scrollbar-hide">
         <div id="week-table-container">
@@ -49,142 +37,20 @@
           </div>
           <div id="weekReservations">
             <div class="w-full flex flex-col gap-2 sm:gap-3" style="display:flex !important;">
-              {% if grouped_reservations %}
-                {% for r in grouped_reservations[current_week_index].reservations %}
-                  <div class="rounded-xl bg-white ring-1 ring-stone-100 shadow p-3 md:p-4 flex-shrink-0 flex flex-col items-start justify-between" style="display:flex !important;">
-                    <div class="font-medium mb-1">
-                      <span class="px-2 py-0.5 rounded-full bg-pink-200 text-pink-800 text-[13px] font-semibold mr-1">
-                        {{ gunler[r.session_day] }}
-                      </span>
-                      <span class="text-black font-bold text-lg">{{ r.session_time }}</span>
-                      <span class="ml-1 px-2 py-0.5 rounded bg-stone-100 text-gray-500 text-sm">{{ r.session_date }}</span>
-                    </div>
-                    <div class="text-xs text-stone-500 mb-1">{{ r.session_notes or '—' }}</div>
-                    {% if r.cancel_status == 'pending' %}
-                      <span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">İptal beklemede</span>
-                    {% elif r.cancel_status == 'approved' %}
-                      <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900">İptal onaylandı</span>
-                    {% elif r.cancel_status == 'rejected' %}
-                      <span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-200 text-rose-900">İptal reddedildi</span>
-                    {% endif %}
-                    <div class="flex flex-col md:flex-row gap-2 md:gap-3 mt-3">
-                      <button type="button"
-                        class="px-4 py-3 md:px-3 md:py-2 rounded-xl shadow text-sm md:text-sm {% if r.cancel_status == 'pending' %} bg-stone-200 cursor-not-allowed opacity-60 {% else %} bg-amber-100 text-amber-900 hover:shadow-md {% endif %}"
-                        {% if r.cancel_status == 'pending' %}disabled{% else %}onclick="document.getElementById('cancelModal-{{ r.id }}').classList.remove('hidden')"{% endif %}>
-                        İptal Et
-                      </button>
-                      <a href="{{ url_for('user.move', reservation_id=r.id) }}"
-                        class="px-4 py-3 md:px-3 md:py-2 rounded-xl bg-purple-100 text-purple-700 shadow text-sm md:text-sm hover:shadow-md">
-                        Saat Değiştir
-                      </a>
-                    </div>
-                    <div id="cancelModal-{{ r.id }}" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                      <div class="w-full max-w-md rounded-2xl bg-white p-4 md:p-5 shadow-lg">
-                        <h3 class="font-semibold mb-2 text-lg">İptal Talebi</h3>
-                        <p class="text-sm text-stone-600 mb-3">Lütfen iptal sebebinizi yazın. Talebiniz eğitmen tarafından onaylandığında geçerli olacaktır.</p>
-                        <form method="post" action="{{ url_for('user.cancel_request', reservation_id=r.id) }}" class="space-y-3">
-                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                          <textarea name="reason" required class="w-full border rounded-xl p-3 text-base" rows="3" placeholder="İptal sebebi..."></textarea>
-                          <div class="flex items-center justify-end gap-2">
-                            <button type="button" class="px-4 py-3 rounded-xl bg-stone-100 text-base" onclick="document.getElementById('cancelModal-{{ r.id }}').classList.add('hidden')">Vazgeç</button>
-                            <button class="px-4 py-3 rounded-xl bg-rose-200 shadow text-base">İptal Talebi Gönder</button>
-                          </div>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                {% endfor %}
-              {% else %}
-                <div class="text-sm text-stone-600">Aktif rezervasyonunuz yok.</div>
-              {% endif %}
-            </div>
+              </div>
           </div>
         </div>
       </div>
-      <script>
-        let currentWeek = parseInt('{{ current_week_index|default(0) }}');
-        const weekGroups = JSON.parse('{{ grouped_reservations|tojson|safe }}');
-        function showWeek(offset) {
-          currentWeek += offset;
-          if (currentWeek < 0) currentWeek = 0;
-          if (currentWeek >= weekGroups.length) currentWeek = weekGroups.length - 1;
-          document.getElementById('weekLabel').innerText = weekGroups[currentWeek].week;
-          // Haftalık navigasyon butonlarının rengini güncelle
-          document.getElementById('prevWeekBtn').className = 'px-4 py-3 md:px-3 md:py-2 rounded-xl bg-purple-50 text-black shadow hover:shadow-md text-base md:text-sm';
-          document.getElementById('nextWeekBtn').className = 'px-4 py-3 md:px-3 md:py-2 rounded-xl bg-purple-50 text-black shadow hover:shadow-md text-base md:text-sm';
-          // Rezervasyonları güncelle
-          let html = '';
-          for (const r of weekGroups[currentWeek].reservations) {
-            const gunler = {
-              'Monday': 'Pazartesi',
-              'Tuesday': 'Salı',
-              'Wednesday': 'Çarşamba',
-              'Thursday': 'Perşembe',
-              'Friday': 'Cuma',
-              'Saturday': 'Cumartesi',
-              'Sunday': 'Pazar'
-            };
-            const dayName = gunler[r.session_day] || r.session_day;
-            const cancelDisabled = r.cancel_status === 'pending' ? 'disabled' : '';
-            const cancelClass = r.cancel_status === 'pending' ? 'bg-stone-200 cursor-not-allowed opacity-60' : 'bg-amber-100 text-amber-900 hover:shadow-md';
-            let statusBadge = '';
-            if (r.cancel_status === 'pending') {
-              statusBadge = '<span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">İptal beklemede</span>';
-            } else if (r.cancel_status === 'approved') {
-              statusBadge = '<span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900">İptal onaylandı</span>';
-            } else if (r.cancel_status === 'rejected') {
-              statusBadge = '<span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-200 text-rose-900">İptal reddedildi</span>';
-            }
-            html += `<div class='rounded-xl bg-white ring-1 ring-stone-100 shadow p-2 sm:p-3 md:p-4 flex-shrink-0 flex flex-col items-start justify-between' style='display:flex !important;'>` +
-              `<div class='font-medium mb-1'>` +
-              `<span class='px-1 sm:px-2 py-0.5 rounded-full bg-pink-200 text-pink-800 text-[11px] sm:text-[13px] font-semibold mr-1'>${dayName}</span>` +
-              `<span class='text-black font-bold text-sm sm:text-base md:text-lg'>${r.session_time || ''}</span>` +
-              `<span class='ml-1 px-1 sm:px-2 py-0.5 rounded bg-stone-100 text-gray-500 text-xs'>${r.session_date || ''}</span>` +
-              `</div>` +
-              `<div class='text-xs text-stone-500 mb-1'>${r.session_notes || '—'}</div>` +
-              `${statusBadge}` +
-              `<div class='flex flex-col sm:flex-row gap-2 sm:gap-3 mt-2 sm:mt-3'>` +
-              `<button type='button' class='px-3 py-2 sm:px-4 sm:py-3 md:px-3 md:py-2 rounded-xl shadow text-xs sm:text-sm md:text-sm ${cancelClass}' ${cancelDisabled} onclick="document.getElementById('cancelModal-${r.id}').classList.remove('hidden')">İptal Et</button>` +
-              `<a href='/move/${r.id}' class='px-3 py-2 sm:px-4 sm:py-3 md:px-3 md:py-2 rounded-xl bg-purple-100 text-purple-700 shadow text-xs sm:text-sm md:text-sm hover:shadow-md'>Saat Değiştir</a>` +
-              `</div>` +
-              `<div id='cancelModal-${r.id}' class='hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4'>` +
-              `<div class='w-full max-w-md rounded-2xl bg-white p-3 sm:p-4 md:p-5 shadow-lg'>` +
-              `<h3 class='font-semibold mb-2 text-base sm:text-lg'>İptal Talebi</h3>` +
-              `<p class='text-xs sm:text-sm text-stone-600 mb-3'>Lütfen iptal sebebinizi yazın. Talebiniz eğitmen tarafından onaylandığında geçerli olacaktır.</p>` +
-              `<form method='post' action='/cancel_request/${r.id}' class='space-y-2 sm:space-y-3'>` +
-              `<input type='hidden' name='csrf_token' value='{{ csrf_token() }}'/>` +
-              `<textarea name='reason' required class='w-full border rounded-xl p-2 sm:p-3 text-sm sm:text-base' rows='3' placeholder='İptal sebebi...'></textarea>` +
-              `<div class='flex items-center justify-end gap-2'>` +
-              `<button type='button' class='px-3 py-2 sm:px-4 sm:py-3 rounded-xl bg-stone-50 text-sm sm:text-base' onclick="document.getElementById('cancelModal-${r.id}').classList.add('hidden')">Vazgeç</button>` +
-              `<button class='px-3 py-2 sm:px-4 sm:py-3 rounded-xl bg-purple-100 text-purple-700 shadow text-sm sm:text-base'>İptal Talebi Gönder</button>` +
-              `</div>` +
-              `</form>` +
-              `</div>` +
-              `</div>` +
-              `</div>`;
-          }
-          document.getElementById('weekReservations').innerHTML = `<div class='w-full flex flex-col gap-2 sm:gap-3' style='display:flex !important;'>${html}</div>`;
-        }
-      </script>
     </div>
   </div>
 
-  <!-- Yaklaşan Seanslar -->
   <div class="w-full sm:w-1/2 rounded-[22px] border border-white/55 bg-white/65 backdrop-blur-xl p-2 sm:p-3 md:p-4 lg:p-6 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
     <h2 class="font-semibold text-base sm:text-lg mb-2 sm:mb-3">Yaklaşan Seanslar</h2>
     <div class="space-y-2 sm:space-y-3">
       {% for s in upcoming[:3] %}
         <div class="rounded-2xl bg-white/85 ring-1 ring-white/60 shadow-inner p-2 sm:p-3 md:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 md:gap-4">
           <div>
-            {% set gunler = {
-              'Monday': 'Pazartesi',
-              'Tuesday': 'Salı',
-              'Wednesday': 'Çarşamba',
-              'Thursday': 'Perşembe',
-              'Friday': 'Cuma',
-              'Saturday': 'Cumartesi',
-              'Sunday': 'Pazar'
-            } %}
+            {% set gunler = {'Monday': 'Pazartesi', 'Tuesday': 'Salı', 'Wednesday': 'Çarşamba', 'Thursday': 'Perşembe', 'Friday': 'Cuma', 'Saturday': 'Cumartesi', 'Sunday': 'Pazar'} %}
             <div class="font-medium">
               <span class="px-1 sm:px-2 py-0.5 rounded-full bg-pink-200 text-pink-800 text-[11px] sm:text-[13px] font-semibold mr-1">
                 {{ gunler[s.date.strftime('%A')] }}
@@ -204,6 +70,7 @@
           </form>
         </div>
       {% endfor %}
+      
       {% if upcoming|length > 3 %}
         <div class="flex justify-center mt-3 sm:mt-4">
           <a href="{{ url_for('user.list_sessions') }}" class="px-3 py-2 sm:px-4 sm:py-2 rounded-xl bg-purple-50 text-purple-600 text-xs sm:text-sm shadow hover:shadow-md">Tümünü Gör</a>
@@ -215,6 +82,105 @@
   </div>
 </div>
 
-{% endblock %}
+<script>
+  // Python verisini manuel olarak JS objesine çeviriyoruz (is_late bilgisini korumak için)
+  const weekGroups = [
+    {% if grouped_reservations %}
+      {% for group in grouped_reservations %}
+      {
+        week: "{{ group.week }}",
+        reservations: [
+          {% for r in group.reservations %}
+          {
+            id: {{ r.id }},
+            session_day: "{{ r.session_day }}",
+            session_time: "{{ r.session_time }}",
+            session_date: "{{ r.session_date }}",
+            session_notes: "{{ r.session_notes or '' }}",
+            cancel_status: "{{ r.cancel_status }}",
+            is_late: {{ 'true' if r.is_late else 'false' }}
+          },
+          {% endfor %}
+        ]
+      },
+      {% endfor %}
+    {% endif %}
+  ];
 
-  <!-- Kgaliba kullanılan bu -->
+  let currentWeek = parseInt('{{ current_week_index|default(0) }}');
+
+  function showWeek(offset) {
+    // Veri yoksa işlem yapma
+    if (!weekGroups || weekGroups.length === 0) {
+        document.getElementById('weekReservations').innerHTML = '<div class="text-sm text-stone-600">Aktif rezervasyonunuz yok.</div>';
+        return;
+    }
+
+    currentWeek += offset;
+    if (currentWeek < 0) currentWeek = 0;
+    if (currentWeek >= weekGroups.length) currentWeek = weekGroups.length - 1;
+    
+    document.getElementById('weekLabel').innerText = weekGroups[currentWeek].week;
+    
+    let html = '';
+    for (const r of weekGroups[currentWeek].reservations) {
+      const gunler = {'Monday': 'Pazartesi', 'Tuesday': 'Salı', 'Wednesday': 'Çarşamba', 'Thursday': 'Perşembe', 'Friday': 'Cuma', 'Saturday': 'Cumartesi', 'Sunday': 'Pazar'};
+      const dayName = gunler[r.session_day] || r.session_day;
+      
+      // BUTON MANTIĞI
+      let cancelBtnHtml = '';
+      if (r.cancel_status === 'pending') {
+          cancelBtnHtml = `<button type='button' class='px-3 py-2 sm:px-4 sm:py-3 md:px-3 md:py-2 rounded-xl shadow text-xs sm:text-sm md:text-sm bg-stone-200 cursor-not-allowed opacity-60' disabled>İptal Beklemede</button>`;
+      } else {
+          if (r.is_late) {
+             // GEÇ KALINDIYSA: Alert ver
+             cancelBtnHtml = `<button type='button' class='px-3 py-2 sm:px-4 sm:py-3 md:px-3 md:py-2 rounded-xl shadow text-xs sm:text-sm md:text-sm bg-stone-200 text-stone-500 hover:bg-stone-300' onclick="alert('⚠️ UYARI: Dersin başlamasına 24 saatten az kaldığı için sistem üzerinden iptal işlemi yapılamaz.\\n\\nLütfen doğrudan eğitmeniniz ile iletişime geçiniz.')">🚫 İptal Et</button>`;
+          } else {
+             // ZAMAN VARSA: Modal Aç
+             cancelBtnHtml = `<button type='button' class='px-3 py-2 sm:px-4 sm:py-3 md:px-3 md:py-2 rounded-xl shadow text-xs sm:text-sm md:text-sm bg-amber-100 text-amber-900 hover:shadow-md' onclick="document.getElementById('cancelModal-${r.id}').classList.remove('hidden')">İptal Et</button>`;
+          }
+      }
+
+      let statusBadge = '';
+      if (r.cancel_status === 'pending') statusBadge = '<span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">İptal beklemede</span>';
+      else if (r.cancel_status === 'approved') statusBadge = '<span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900">İptal onaylandı</span>';
+      else if (r.cancel_status === 'rejected') statusBadge = '<span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-200 text-rose-900">İptal reddedildi</span>';
+
+      html += `<div class='rounded-xl bg-white ring-1 ring-stone-100 shadow p-2 sm:p-3 md:p-4 flex-shrink-0 flex flex-col items-start justify-between' style='display:flex !important;'>` +
+        `<div class='font-medium mb-1'>` +
+        `<span class='px-1 sm:px-2 py-0.5 rounded-full bg-pink-200 text-pink-800 text-[11px] sm:text-[13px] font-semibold mr-1'>${dayName}</span>` +
+        `<span class='text-black font-bold text-sm sm:text-base md:text-lg'>${r.session_time || ''}</span>` +
+        `<span class='ml-1 px-1 sm:px-2 py-0.5 rounded bg-stone-100 text-gray-500 text-xs'>${r.session_date || ''}</span>` +
+        `</div>` +
+        `<div class='text-xs text-stone-500 mb-1'>${r.session_notes || '—'}</div>` +
+        `${statusBadge}` +
+        `<div class='flex flex-col sm:flex-row gap-2 sm:gap-3 mt-2 sm:mt-3'>` +
+        `${cancelBtnHtml}` +
+        `<a href='/move/${r.id}' class='px-3 py-2 sm:px-4 sm:py-3 md:px-3 md:py-2 rounded-xl bg-purple-100 text-purple-700 shadow text-xs sm:text-sm md:text-sm hover:shadow-md'>Saat Değiştir</a>` +
+        `</div>` +
+        `<div id='cancelModal-${r.id}' class='hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4'>` +
+        `<div class='w-full max-w-md rounded-2xl bg-white p-3 sm:p-4 md:p-5 shadow-lg'>` +
+        `<h3 class='font-semibold mb-2 text-base sm:text-lg'>İptal Talebi</h3>` +
+        `<p class='text-xs sm:text-sm text-stone-600 mb-3'>Lütfen iptal sebebinizi yazın. Talebiniz eğitmen tarafından onaylandığında geçerli olacaktır.</p>` +
+        `<form method='post' action='/cancel_request/${r.id}' class='space-y-2 sm:space-y-3'>` +
+        `<input type='hidden' name='csrf_token' value='{{ csrf_token() }}'/>` +
+        `<textarea name='reason' required class='w-full border rounded-xl p-2 sm:p-3 text-sm sm:text-base' rows='3' placeholder='İptal sebebi...'></textarea>` +
+        `<div class='flex items-center justify-end gap-2'>` +
+        `<button type='button' class='px-3 py-2 sm:px-4 sm:py-3 rounded-xl bg-stone-50 text-sm sm:text-base' onclick="document.getElementById('cancelModal-${r.id}').classList.add('hidden')">Vazgeç</button>` +
+        `<button class='px-3 py-2 sm:px-4 sm:py-3 rounded-xl bg-purple-100 text-purple-700 shadow text-sm sm:text-base'>İptal Talebi Gönder</button>` +
+        `</div>` +
+        `</form>` +
+        `</div>` +
+        `</div>` +
+        `</div>`;
+    }
+    document.getElementById('weekReservations').innerHTML = `<div class='w-full flex flex-col gap-2 sm:gap-3' style='display:flex !important;'>${html}</div>`;
+  }
+
+  // Sayfa yüklendiğinde ilk haftayı göster
+  document.addEventListener('DOMContentLoaded', () => {
+      showWeek(0);
+  });
+</script>
+
+{% endblock %}

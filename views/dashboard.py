@@ -3,8 +3,8 @@ from datetime import date, timedelta
 from flask import Blueprint, render_template, g, jsonify, current_app
 from sqlalchemy.orm import selectinload
 from sqlalchemy import and_
-from models import db, Session, Reservation
-from decorators import login_required
+from app.models import db, Session, Reservation
+from app.decorators import login_required
 
 dashboard_bp = Blueprint("dashboard_bp", __name__, url_prefix="")
 

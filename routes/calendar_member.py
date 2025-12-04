@@ -1,8 +1,8 @@
 from flask import Blueprint, request, redirect, url_for, flash, session as flask_session
 from datetime import datetime
 from sqlalchemy import func
-from models import db, Session, Reservation, Member
-from decorators import login_required
+from app.models import db, Session, Reservation, Member
+from app.decorators import login_required
 
 calendar_member_bp = Blueprint('calendar_member_bp', __name__)
 

@@ -1,38 +1,69 @@
 {% extends 'base.html' %}
-{% block title %}Seanslar · Pilates Studio{% endblock %}
+{% block title %}Tüm Seanslar · Pilates Studio{% endblock %}
 
 {% block content %}
-<div class="rounded-[22px] border border-white/55 bg-white/55 backdrop-blur-xl p-6 shadow-[0_20px_80px_-30px_rgba(0,0,0,.25)]">
-  <h2 class="font-semibold mb-4 text-lg">Tüm Yaklaşan Seanslar</h2>
+<div class="max-w-4xl mx-auto">
+  
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-stone-800">Tüm Açık Seanslar</h1>
+    <a href="{{ url_for('user.user_dashboard') }}" class="text-sm text-stone-500 hover:text-stone-800 hover:underline transition">
+      ← Panele Dön
+    </a>
+  </div>
 
-  <div class="grid md:grid-cols-2 gap-4">
+  <div class="grid gap-4 md:grid-cols-2">
     {% for s in sessions %}
-    <div class="rounded-2xl bg-white/80 ring-1 ring-white/60 shadow-inner p-4 flex flex-col justify-between">
-      <div>
-        <div class="font-medium mb-1">
-          {% set day_name = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'][s.date.weekday()] %}
-          <span class="text-sm font-medium text-violet-700 mr-1">{{ day_name }}</span>
-          {{ s.date.strftime('%d.%m.%Y') }} · {{ s.time.strftime('%H:%M') }}
+    <div class="rounded-2xl border border-white/60 bg-white/60 backdrop-blur-xl p-5 shadow-sm hover:shadow-md transition">
+      <div class="flex justify-between items-start mb-3">
+        <div>
+          <div class="text-lg font-bold text-stone-800">
+            {{ s.date.strftime('%d.%m.%Y') }}
+          </div>
+          <div class="text-stone-500 font-medium">
+            {{ s.date.strftime('%A') }} · {{ s.time.strftime('%H:%M') }}
+          </div>
         </div>
-        <div class="text-xs text-stone-500 mb-3">
-          Kapasite: {{ s.capacity }} · Kalan: {{ s.spots_left }}
+        <div class="text-right">
+          {% if s.spots_left > 0 %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+              {{ s.spots_left }} yer var
+            </span>
+          {% else %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800">
+              Dolu
+            </span>
+          {% endif %}
         </div>
       </div>
-      <form method="post" action="{{ url_for('reserve', session_id=s.id) }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <button
-          class="w-full rounded-2xl px-4 py-2 shadow-lg transition
-                 {% if s.spots_left == 0 %}
-                   bg-gray-300 text-gray-500 cursor-not-allowed opacity-70
-                 {% else %}
-                   bg-gradient-to-r from-rose-300 to-violet-300 hover:shadow-xl
-                 {% endif %}"
-          {% if s.spots_left == 0 %}disabled{% endif %}>
-          {% if s.spots_left == 0 %}Dolu{% else %}Katıl{% endif %}
-        </button>
-      </form>
+
+      {% if s.notes %}
+        <p class="text-sm text-stone-500 mb-4 bg-stone-50 p-2 rounded-lg border border-stone-100">
+          📝 {{ s.notes }}
+        </p>
+      {% endif %}
+
+      <div class="mt-2">
+        {% if s.spots_left > 0 %}
+          <form method="post" action="{{ url_for('user.reserve', session_id=s.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button class="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-300 to-violet-300 text-stone-900 font-semibold shadow hover:shadow-lg hover:scale-[1.02] transition">
+              Rezerve Et
+            </button>
+          </form>
+        {% else %}
+          <button disabled class="w-full py-2.5 rounded-xl bg-stone-200 text-stone-400 font-semibold cursor-not-allowed">
+            Kontenjan Dolu
+          </button>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="col-span-2 text-center py-12 text-stone-400">
+      <div class="text-4xl mb-3">📅</div>
+      <p>Şu an açık seans bulunmuyor.</p>
     </div>
     {% endfor %}
   </div>
+
 </div>
 {% endblock %}

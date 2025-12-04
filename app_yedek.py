@@ -25,7 +25,7 @@ app.config['WTF_CSRF_ENABLED'] = True
 csrf = CSRFProtect(app)
 
 # Veritabanı modellerini ve bağlantısını ayarla
-from models import db, Session, Reservation, Member, Attendance, Measurement, ALLOWED_STATUSES, ALLOWED_CANCEL
+from app.models import db, Session, Reservation, Member, Attendance, Measurement, ALLOWED_STATUSES, ALLOWED_CANCEL
 db.init_app(app)
 migrate = Migrate(app, db)
 
@@ -37,7 +37,7 @@ from routes.calendar_member import calendar_member_bp
 app.register_blueprint(calendar_member_bp)
 
 from services.activity import build_attendance_weeks
-from decorators import login_required, admin_required
+from app.decorators import login_required, admin_required
 
 from routes.admin_cancel_requests import admin_cancel_requests_bp
 app.register_blueprint(admin_cancel_requests_bp)

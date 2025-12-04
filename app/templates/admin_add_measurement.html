@@ -1,47 +1,38 @@
-{% extends 'base.html' %}
-{% block title %}Ölçüm Ekle · Pilates Studio{% endblock %}
+{% extends "base.html" %}
 {% block content %}
-<h2 class="font-semibold text-lg mb-4">Üye Ölçüm Ekle</h2>
-<form method="post" class="space-y-4 max-w-md">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-  <label class="block">
-    <span class="text-sm">Üye</span>
-    <select name="member_id" required class="w-full mt-1 p-2 border rounded">
-      {% for m in members %}
-        <option value="{{ m.id }}">{{ m.full_name }}</option>
-      {% endfor %}
-    </select>
-  </label>
-  <label class="block">
-    <span class="text-sm">Tarih</span>
-    <input type="date" name="date" required class="w-full mt-1 p-2 border rounded" value="{{ today }}">
-  </label>
-  <label class="block">
-    <span class="text-sm">Kilo (kg)</span>
-    <input type="number" step="0.1" name="weight" required class="w-full mt-1 p-2 border rounded">
-  </label>
-  <label class="block">
-    <span class="text-sm">Bel (cm)</span>
-    <input type="number" step="0.1" name="waist" class="w-full mt-1 p-2 border rounded">
-  </label>
-  <label class="block">
-    <span class="text-sm">Kalça (cm)</span>
-    <input type="number" step="0.1" name="hip" class="w-full mt-1 p-2 border rounded">
-  </label>
-  <label class="block">
-    <span class="text-sm">Göğüs (cm)</span>
-    <input type="number" step="0.1" name="chest" class="w-full mt-1 p-2 border rounded">
-  </label>
-  <button type="submit" class="bg-emerald-500 text-white px-4 py-2 rounded">Kaydet</button>
-</form>
-{% if request.args.get('member_id') %}
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      var select = document.querySelector('select[name="member_id"]');
-      if (select) {
-        select.value = "{{ request.args.get('member_id') }}";
-      }
-    });
-  </script>
-{% endif %}
+<div class="bg-white/50 backdrop-blur-xl p-4 rounded-2xl">
+  <h4 class="font-semibold mb-3 text-stone-700">Yeni Ölçüm Girişi</h4>
+  <form method="post" class="grid grid-cols-2 gap-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="col-span-2">
+      <label class="text-xs text-stone-500 block mb-1">Tarih</label>
+      <input type="date" name="date" class="w-full p-2 rounded-xl bg-white border border-stone-200 outline-none focus:ring-1 focus:ring-emerald-400 text-sm">
+    </div>
+    
+    <div>
+      <label class="text-xs text-stone-500 block mb-1">Kilo (kg)</label>
+      <input type="number" step="0.1" name="weight" placeholder="0.0" class="w-full p-2 rounded-xl bg-white border border-stone-200 outline-none focus:ring-1 focus:ring-emerald-400 text-sm">
+    </div>
+
+    <div>
+      <label class="text-xs text-stone-500 block mb-1">Bel (cm)</label>
+      <input type="number" step="0.1" name="waist" placeholder="0.0" class="w-full p-2 rounded-xl bg-white border border-stone-200 outline-none focus:ring-1 focus:ring-emerald-400 text-sm">
+    </div>
+
+    <div>
+      <label class="text-xs text-stone-500 block mb-1">Kalça (cm)</label>
+      <input type="number" step="0.1" name="hip" placeholder="0.0" class="w-full p-2 rounded-xl bg-white border border-stone-200 outline-none focus:ring-1 focus:ring-emerald-400 text-sm">
+    </div>
+
+    <div>
+      <label class="text-xs text-stone-500 block mb-1">Göğüs (cm)</label>
+      <input type="number" step="0.1" name="chest" placeholder="0.0" class="w-full p-2 rounded-xl bg-white border border-stone-200 outline-none focus:ring-1 focus:ring-emerald-400 text-sm">
+    </div>
+
+    <div class="col-span-2 pt-2">
+      <button type="submit" class="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition shadow text-sm">Kaydet</button>
+    </div>
+  </form>
+</div>
 {% endblock %}

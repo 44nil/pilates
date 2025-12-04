@@ -12,10 +12,14 @@ class Measurement(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     member_id = db.Column(db.Integer, db.ForeignKey("members.id", ondelete="CASCADE"), nullable=False, index=True)
     date = db.Column(db.Date, nullable=False, default=date.today)
+    
     weight = db.Column(db.Float, nullable=False)  # kg
-    waist = db.Column(db.Float)  # cm
-    hip = db.Column(db.Float)  # cm
-    chest = db.Column(db.Float)  # cm
+    waist = db.Column(db.Float)  # cm (Bel)
+    hip = db.Column(db.Float)    # cm (Kalça)
+    chest = db.Column(db.Float)  # cm (Göğüs)
+    
+    # İlişki (Members tablosuna geri bağlantı)
+    member = db.relationship("Member", backref=db.backref("measurements", cascade="all, delete-orphan"))
 
 class Session(db.Model):
     __tablename__ = "sessions"
@@ -74,8 +78,7 @@ class Member(db.Model):
     credits = db.Column(db.Integer, default=0, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now, nullable=False)
     
-    # İlişkiler
-    measurements = db.relationship("Measurement", backref="member", lazy=True)
+   
     
     @staticmethod
     def canonical(name: str) -> str:

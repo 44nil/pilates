@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, request, jsonify
 from datetime import datetime, timedelta
 from sqlalchemy import func
-from models import db, Session, Reservation, ALLOWED_STATUSES
-from decorators import admin_required
+from app.models import db, Session, Reservation, ALLOWED_STATUSES
+from app.decorators import admin_required
 
 completed_sessions_bp = Blueprint('completed_sessions_bp', __name__)
 

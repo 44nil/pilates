@@ -368,3 +368,98 @@ def completed_sessions():
     sessions = Session.query.filter_by(completed=True).order_by(Session.date.desc(), Session.time.desc()).all()
     # Template dosyası app/templates klasöründe olmalı
     return render_template('admin_completed_sessions.html', sessions=sessions)
+
+# --- 8. Ölçüm (Measurement) İşlemleri ---
+
+@admin_bp.route('/measurements/<int:member_id>', methods=['GET'])
+@admin_required
+def member_measurements(member_id):
+    # Üyenin geçmiş ölçümlerini listele
+    member = Member.query.get_or_404(member_id)
+    measurements = Measurement.query.filter_by(member_id=member_id).order_by(Measurement.date.desc()).all()
+    return render_template('admin_measurement_list.html', member=member, measurements=measurements)
+
+@admin_bp.route('/measurements/<int:member_id>/add', methods=['GET', 'POST'])
+@admin_required
+def add_measurement(member_id):
+    member = Member.query.get_or_404(member_id)
+    
+    if request.method == 'POST':
+        try:
+            def get_float(key):
+                val = request.form.get(key)
+                if not val or val.strip() == '': return 0.0
+                return float(val)
+
+            weight = get_float('weight')
+            waist = get_float('waist')
+            hip = get_float('hip')
+            chest = get_float('chest')
+            
+            date_str = request.form.get('date')
+            m_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else date.today()
+
+            new_m = Measurement(
+                member_id=member.id,
+                date=m_date,
+                weight=weight,
+                waist=waist,
+                hip=hip,
+                chest=chest
+            )
+            db.session.add(new_m)
+            db.session.commit()
+            
+            flash('Ölçüm başarıyla eklendi. ✅', 'success')
+            return redirect(url_for('admin.member_measurements', member_id=member.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Hata: {str(e)}', 'error')
+            return render_template('admin_add_measurement.html', member=member), 400
+
+    return render_template('admin_add_measurement.html', member=member)
+
+@admin_bp.route('/measurements/delete/<int:measurement_id>', methods=['POST'])
+@admin_required
+def delete_measurement(measurement_id):
+    measurement = Measurement.query.get_or_404(measurement_id)
+    member_id = measurement.member_id
+    
+    try:
+        db.session.delete(measurement)
+        db.session.commit()
+        flash('Ölçüm silindi.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Silme hatası: {str(e)}', 'error')
+        
+    return redirect(url_for('admin.member_measurements', member_id=member_id))
+
+# --- 9. İptal Taleplerini Yönetme ---
+
+@admin_bp.route('/cancel_requests/handle/<int:req_id>/<action>', methods=['POST'])
+@admin_required
+def handle_cancel_request(req_id, action):
+    r = Reservation.query.get_or_404(req_id)
+    
+    if action == 'approve':
+        # Onayla: Rezervasyonu iptal et, yer aç, kredi iade et
+        r.status = 'canceled'
+        r.cancel_status = 'approved'
+        r.session.spots_left += 1
+        
+        # Kredi iadesi
+        member = Member.query.filter(func.lower(Member.full_name) == r.user_name.lower()).first()
+        if member:
+            member.credits += 1
+            
+        flash('İptal talebi onaylandı. Kredi iade edildi.', 'success')
+        
+    elif action == 'reject':
+        # Reddet: Sadece durumu güncelle
+        r.cancel_status = 'rejected'
+        flash('İptal talebi reddedildi.', 'warning')
+        
+    db.session.commit()
+    return redirect(url_for('admin.list_cancel_requests'))

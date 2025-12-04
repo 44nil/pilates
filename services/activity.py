@@ -3,7 +3,7 @@ from collections import defaultdict
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 def build_attendance_weeks(member_id: int, weeks: int = 16):
-    from models import Attendance  # artık models.py'den import ediyoruz
+    from app.models import Attendance  # artık models.py'den import ediyoruz
     try:
         end = date.today()
         start = end - timedelta(weeks=weeks)
