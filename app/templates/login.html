@@ -1,103 +1,78 @@
-{% extends 'base.html' %}
-{% block title %}Giriş · Pilates Studio{% endblock %}
+{% extends "base.html" %}
+
+{% block title %}Giriş Yap - {{ g.tenant.name if g.tenant else 'Pilates Studio' }}{% endblock %}
+
+{% block head %}
+<script
+  async
+  crossorigin="anonymous"
+  data-clerk-publishable-key="{{ publishable_key }}"
+  src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+  type="text/javascript"
+></script>
+{% endblock %}
 
 {% block content %}
-<style>
-  /* base'in içerik kabını bu sayfada şeffaflaştırıyoruz */
-  .glass{ background: transparent !important; border-color: transparent !important;
-          box-shadow: none !important; backdrop-filter: none !important; }
-</style>
-
-<section class="min-h-[calc(100vh-120px)] flex items-center justify-center">
-  <div class="w-full max-w-6xl px-4">
-    <div class="grid lg:grid-cols-2 gap-8">
-
-      <div class="rounded-[22px] border border-white/55 bg-white/55 backdrop-blur-2xl shadow-[0_30px_120px_-40px_rgba(0,0,0,.35)] p-6 md:p-8">
-        <div class="flex items-start justify-between">
-          <div class="text-sm text-stone-500">Pilates.studio_</div>
-          <a href="{{ url_for('admin.login') }}" class="text-sm text-stone-600 hover:underline">Kaydol / Yönetim</a>
+<div class="flex items-center justify-center min-h-[70vh]">
+    
+    <div class="w-full max-w-md p-8 rounded-[32px] border border-white/30 shadow-xl backdrop-blur-md bg-white/10 relative">
+        
+        <div class="text-center mb-6">
+            <h2 class="text-3xl font-light text-stone-800 tracking-wide">
+                {% if g.tenant %}
+                    {{ g.tenant.name }}
+                {% else %}
+                    Hoş Geldiniz
+                {% endif %}
+            </h2>
+            <div class="h-1 w-20 bg-rose-300 mx-auto mt-4 rounded-full opacity-60"></div>
         </div>
 
-        <h1 class="mt-3 text-3xl font-semibold">Hoş Geldin</h1>
-        <p class="mt-1 text-stone-600">Seanslarına ve paketlerine erişmek için giriş yap.</p>
-
-        <form method="post" class="mt-6 space-y-4">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-          <label class="block">
-            <span class="mb-2 block text-sm">ad‑soyad</span>
-            <div class="flex items-center gap-2 rounded-2xl bg-white/90 ring-1 ring-white/70 shadow-inner px-4 py-3 focus-within:ring-rose-300">
-              <span>👤</span>
-              <input name="user_name" required placeholder="Örn. Zeynep Kaya"
-                     class="w-full bg-transparent outline-none placeholder-stone-400">
+        <div id="clerk-sign-in" class="flex justify-center min-h-[300px]">
+            <div class="flex items-center justify-center space-x-2 text-rose-500 animate-pulse mt-10">
+                <div class="w-3 h-3 bg-rose-400 rounded-full"></div>
+                <div class="w-3 h-3 bg-rose-400 rounded-full"></div>
+                <div class="w-3 h-3 bg-rose-400 rounded-full"></div>
             </div>
-          </label>
-
-          <button class="w-full rounded-2xl bg-gradient-to-r from-rose-400 via-fuchsia-300 to-violet-300 py-3 font-medium text-stone-900 shadow-lg hover:shadow-xl transition">
-            Seanslarıma Git
-          </button>
-
-          <div class="flex items-center justify-between text-xs text-stone-500 pt-1">
-            <span>Giriş yalnızca kayıtlı üyeler içindir.</span>
-            <a href="{{ url_for('admin.login') }}" class="inline-flex items-center gap-2 rounded-2xl px-3 py-2 bg-white/70 hover:bg-white transition shadow">
-              🧑‍🏫 Yönetim Girişi
-            </a>
-          </div>
-        </form>
-      </div>
-
-      <div class="rounded-[22px] border border-white/55 bg-white/55 backdrop-blur-2xl shadow-[0_30px_120px_-40px_rgba(0,0,0,.30)] p-0 overflow-hidden">
-
-        <div class="h-28 bg-cover bg-center opacity-80
-                    bg-[url('https://images.unsplash.com/photo-1618005198919-5f5d6f21b3df?q=80&w=1600&auto=format&fit=crop')]">
         </div>
 
-        <div class="px-6 md:px-8 py-6 grid grid-cols-2 gap-4 bg-white/50">
-          <div>
-            <div class="text-xs text-stone-500">Stüdyo</div>
-            <div class="text-lg font-semibold">Zena Fit Pilates</div>
-            <div class="text-sm text-stone-600">Aydın • Türkiye</div>
-          </div>
-
-          <div class="text-right">
-            <div class="text-sm font-medium">Sağlık &amp; Denge</div>
-            <div class="text-[12px] text-stone-500">Zihin • Beden • Ruh</div>
-            <a href="{{ url_for('user.list_sessions') }}"
-               class="inline-block mt-2 rounded-full px-4 py-1.5 text-sm bg-gradient-to-r from-rose-300 to-violet-300 shadow hover:brightness-105">
-              Keşfet
-            </a>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-0 text-sm px-6 md:px-8 py-5">
-          <div class="text-stone-700">
-            <div class="text-xs text-stone-500"></div>
-            <div>Adım Adım Güç</div>
-            <div> Günden güne daha iyiye </div>
-            <a class="mt-1 inline-block text-[12px] text-rose-500 underline">Reformer &amp; Mat</a>
-          </div>
-          <div class="text-right">
-            <div class="text-xs text-stone-500">Zena Fit Pilates</div>
-            <div>Aydın • Türkiye</div>
-          </div>
-        </div>
-      </div>
     </div>
+</div>
+{% endblock %}
 
-    <div class="grid lg:grid-cols-2 gap-8 mt-8">
-      <div class="rounded-[16px] border border-white/55 bg-white/55 backdrop-blur-xl p-5 shadow">
-        <div class="text-sm font-medium">“10 derste farkı hissedeceksiniz, 20 derste göreceksiniz, 30 derste yepyeni bir bedeniniz olacak.”</div>
-        <div class="text-xs text-stone-500 mt-1">— Joseph Pilates</div>
-      </div>
+{% block scripts %}
+<script>
+  window.addEventListener("load", async function () {
+    await Clerk.load();
 
-      <div class="rounded-[16px] border border-white/55 bg-white/55 backdrop-blur-xl p-5 shadow flex items-center gap-3">
-        <img src="https://images.unsplash.com/photo-1544006659-f0b21884ce1d?q=80&w=200&auto=format&fit=crop"
-             class="h-10 w-10 rounded-full object-cover" alt="coach">
-        <div>
-          <div class="text-sm font-medium">Büşra Hoca</div>
-          <div class="text-xs text-stone-500">“Zena, güçlü kadın demek… Zena Fit ise bu gücü bedeninde hissettiğin yer.”</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+    if (Clerk.user) {
+      // Zaten giriş yapmışsa direkt yönlendir
+      const prefix = "{{ g.tenant.domain_prefix if g.tenant else '' }}";
+      const redirectUrl = prefix ? `/${prefix}/auth/clerk_sync` : `/auth/clerk_sync`;
+      window.location.href = redirectUrl;
+    } else {
+      // Giriş yapmamışsa kutuyu göster
+      const signInDiv = document.getElementById("clerk-sign-in");
+      
+      // Yönlendirme URL'ini dinamik ayarla
+      const prefix = "{{ g.tenant.domain_prefix if g.tenant else '' }}";
+      const redirectUrl = prefix ? `/${prefix}/auth/clerk_sync` : `/auth/clerk_sync`;
+
+      Clerk.mountSignIn(signInDiv, {
+        afterSignInUrl: redirectUrl,
+        afterSignUpUrl: redirectUrl,
+        appearance: {
+          elements: {
+            card: "shadow-none bg-transparent", // Kartın kendi gölgesini kapat
+            headerTitle: "hidden", // Başlığı gizle (biz yazdık zaten)
+            headerSubtitle: "hidden",
+            socialButtonsBlockButton: "bg-white/50 hover:bg-white/80 border-white/40 text-stone-700",
+            formButtonPrimary: "bg-stone-800 hover:bg-stone-700 text-white",
+            footerActionLink: "text-rose-600 hover:text-rose-700"
+          }
+        }
+      });
+    }
+  });
+</script>
 {% endblock %}

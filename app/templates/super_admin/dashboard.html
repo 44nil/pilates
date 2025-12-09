@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>🚀 Super Admin Paneli</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStudioModal">
+            + Yeni Stüdyo Ekle
+        </button>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="row mb-4">
+        <div class="col-md-4"><div class="card bg-info text-white"><div class="card-body text-center"><h3>{{ total }}</h3><small>Toplam Stüdyo</small></div></div></div>
+        <div class="col-md-4"><div class="card bg-success text-white"><div class="card-body text-center"><h3>{{ active }}</h3><small>Aktif Stüdyo</small></div></div></div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-header">Sistemdeki Stüdyolar</div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>ID</th><th>Stüdyo Adı</th><th>Prefix</th><th>Durum</th><th>Tarih</th><th>İşlemler</th></tr></thead>
+                <tbody>
+                    {% for studio in studios %}
+                    <tr>
+                        <td>#{{ studio.id }}</td>
+                        <td>{{ studio.name }}</td>
+                        <td>/{{ studio.domain_prefix }}</td>
+                        <td>{{ 'Aktif' if studio.is_active else 'Pasif' }}</td>
+                        <td>{{ studio.created_at.strftime('%d.%m.%Y') }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-dark">Yönet</button>
+                            
+                            <form action="{{ url_for('super_admin.delete_studio', id=studio.id) }}" method="POST" onsubmit="return confirm('Bu stüdyoyu silmek istediğine emin misin?');" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-danger">Sil 🗑️</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="text-center p-3">Henüz stüdyo yok.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addStudioModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('super_admin.add_studio') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header"><h5 class="modal-title">Yeni Stüdyo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-3"><label>Ad</label><input type="text" name="name" class="form-control" required></div>
+                    <div class="mb-3"><label>Prefix (URL Kodu)</label><input type="text" name="domain_prefix" class="form-control" required></div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary">Kaydet</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

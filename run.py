@@ -1,6 +1,10 @@
 import os
 import time
 from app import create_app
+from dotenv import load_dotenv  # Bu satırı ekledik
+
+# .env dosyasını zorla yükle
+load_dotenv()
 
 app = create_app()
 

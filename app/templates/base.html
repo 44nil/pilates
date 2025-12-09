@@ -8,15 +8,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
 
+  {% block head %}{% endblock %}
+
   <style>
     :root{
-      /* Arka plan resmi: /static/bg.jpg koyarsan o kullanılır */
       --bg-url: url("{{ url_for('static', filename='bg.jpg') if false else 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=2000&auto=format&fit=crop' }}");
     }
     html,body{height:100%}
     body{
       font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-      /* Arka plan foto + pastel degrade */
       background:
         radial-gradient(1200px 600px at 80% 20%, rgba(244,114,182,.20), transparent 60%),
         radial-gradient(900px 500px at 10% 70%, rgba(139,92,246,.18), transparent 60%),
@@ -24,54 +24,24 @@
       position:relative;
       overflow-x:hidden;
     }
-
-    /* Mobil scrollbar gizleme */
-    .scrollbar-hide {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-    .scrollbar-hide::-webkit-scrollbar {
-      display: none;
-    }
-
-    /* Mobil touch target iyileştirmesi */
-    @media (max-width: 768px) {
-      button, a, input, textarea, select {
-        min-height: 44px;
-      }
-    }
-
-    /* Arkaya büyük full foto + blur cam görünüm */
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    
     body::before{
-      content:"";
-      position:fixed; inset:0;
-      background-image: var(--bg-url);
-      background-size:cover; background-position:center;
-      opacity:.28;           /* foto çok bastırmasın */
-      filter:brightness(1) saturate(1.05);
-      z-index:-2;
+      content:""; position:fixed; inset:0;
+      background-image: var(--bg-url); background-size:cover; background-position:center;
+      opacity:.28; filter:brightness(1) saturate(1.05); z-index:-2;
     }
-    /* Üstüne hafif noise/gölge */
     body::after{
-      content:"";
-      position:fixed; inset:-20px;
+      content:""; position:fixed; inset:-20px;
       background: radial-gradient(800px 500px at 20% 0%, rgba(255,255,255,.15), transparent 60%);
-      z-index:-1;
-      pointer-events:none;
+      z-index:-1; pointer-events:none;
     }
-    /* Pastel pembe arka plan */
-    .pastel-pink-bg {
-      background: rgba(244,114,182,0.28) !important;
-    }
-    /* Cam kart yardımcı class */
     .glass{
       background: rgba(255,255,255,.20);
-      -webkit-backdrop-filter: blur(18px);
-      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
       border: 1px solid rgba(255,255,255,.2);
-      box-shadow:
-        0 25px 80px -30px rgba(0,0,0,.25),
-        inset 0 1px 0 rgba(255,255,255,.3);
+      box-shadow: 0 25px 80px -30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.3);
     }
   </style>
 </head>
@@ -80,103 +50,65 @@
   <header class="sticky top-0 z-20">
     <div class="mx-auto max-w-7xl px-3 sm:px-4 pt-3 sm:pt-4">
       <nav class="rounded-2xl px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between glass">
-        <a href="{{ url_for('auth.home') }}" class="flex items-center gap-1 sm:gap-2 pl-1 flex-shrink-0">
+        
+        <a href="{{ url_for('user.home') if g.tenant else '/' }}" class="flex items-center gap-1 sm:gap-2 pl-1 flex-shrink-0">
           <span class="inline-block h-6 w-6 sm:h-8 sm:w-8 rounded-2xl bg-gradient-to-br from-rose-300 to-violet-300 shadow-inner"></span>
-          <span class="font-semibold tracking-wide text-sm sm:text-base">Pilates Studio</span>
+          <span class="font-semibold tracking-wide text-sm sm:text-base">
+            {% if g.tenant %}
+              {{ g.tenant.name }}
+            {% else %}
+              SaaS Platform
+            {% endif %}
+          </span>
         </a>
 
         <ul class="hidden md:flex items-center gap-1 text-sm flex-shrink-0">
-          {% if session.get('is_admin') %}
-            <li><a href="{{ url_for('admin.dashboard') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Yönetim Paneli</a></li>
-            <li><a href="{{ url_for('user.calendar') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Takvim</a></li>
-            <li><a href="{{ url_for('admin.sessions') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Seanslar</a></li>
-            <li><a href="{{ url_for('admin.members') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Üyeler</a></li>
-            <li><a href="{{ url_for('auth.logout') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Çıkış</a></li>
-          {% elif session.get('user_name') %}
-            <li><span class="px-3 py-2 rounded-xl bg-white/60 text-sm">{{ session.get('user_name') }}</span></li>
-            <li><a href="{{ url_for('user.profile') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Profilim</a></li>
-            <li><a href="{{ url_for('user.user_dashboard') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Seanslarım</a></li>
-            <li><a href="{{ url_for('user.calendar') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Takvim</a></li>
-            <li><a href="{{ url_for('auth.logout') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Çıkış</a></li>
+          
+          {% if g.tenant %}
+            {% if session.get('is_admin') %}
+              <li><a href="{{ url_for('admin.dashboard') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Yönetim</a></li>
+              <li><a href="{{ url_for('user.calendar') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Takvim</a></li>
+              <li><a href="{{ url_for('admin.sessions') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Seanslar</a></li>
+              <li><a href="{{ url_for('admin.members') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Üyeler</a></li>
+              <li><a href="{{ url_for('auth.logout') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Çıkış</a></li>
+            {% elif session.get('user_name') %}
+              <li><span class="px-3 py-2 rounded-xl bg-white/60 text-sm">{{ session.get('user_name') }}</span></li>
+              <li><a href="{{ url_for('user.profile') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Profil</a></li>
+              <li><a href="{{ url_for('user.calendar') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Takvim</a></li>
+              <li><a href="{{ url_for('auth.logout') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Çıkış</a></li>
+            {% else %}
+              <li><a href="{{ url_for('auth.login') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Giriş</a></li>
+            {% endif %}
+          
           {% else %}
-            <li><a href="{{ url_for('auth.login') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Giriş</a></li>
-            <li><a href="{{ url_for('admin.login') }}" class="px-3 py-2 rounded-xl hover:bg-white/60 transition text-sm">Yönetim Paneli</a></li>
+             <li><a href="{{ url_for('super_admin.dashboard') }}" class="px-3 py-2 rounded-xl bg-rose-100 text-rose-800 font-bold">🚀 Süper Panel</a></li>
+             <li><a href="/" class="px-3 py-2 rounded-xl hover:bg-white/60">Ana Sayfa</a></li>
           {% endif %}
         </ul>
 
         <div class="md:hidden flex items-center gap-2 flex-shrink-0">
-          {% if session.get('is_admin') %}
-            <div class="relative">
-              <button id="mobile-menu-btn" class="p-2 rounded-xl bg-white/70 hover:bg-white/80 transition-colors" aria-label="Menü">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                </svg>
-              </button>
-              <div id="mobile-menu" class="hidden absolute right-0 top-full mt-2 w-56 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 py-3 z-50">
-                <div class="px-4 py-2 border-b border-white/20 mb-2">
-                  <span class="text-xs font-medium text-stone-600">Yönetim Paneli</span>
-                </div>
-                <a href="{{ url_for('admin.dashboard') }}" class="block px-4 py-3 text-sm hover:bg-white/60 transition-colors">🏠 Yönetim Paneli</a>
-                <a href="{{ url_for('user.calendar') }}" class="block px-4 py-3 text-sm hover:bg-white/60 transition-colors">📅 Takvim</a>
-                <a href="{{ url_for('admin.sessions') }}" class="block px-4 py-3 text-sm hover:bg-white/60 transition-colors">🎯 Seanslar</a>
-                <a href="{{ url_for('admin.members') }}" class="block px-4 py-3 text-sm hover:bg-white/60 transition-colors">👥 Üyeler</a>
-                <div class="border-t border-white/20 mt-2 pt-2">
-                  <a href="{{ url_for('auth.logout') }}" class="block px-4 py-3 text-sm hover:bg-red-50 text-red-600 transition-colors">🚪 Çıkış</a>
-                </div>
-              </div>
-            </div>
-          {% elif session.get('user_name') %}
-            <div class="relative">
-              <button id="mobile-menu-btn" class="p-2 rounded-xl bg-white/70 hover:bg-white/80 transition-colors" aria-label="Menü">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                </svg>
-              </button>
-              <div id="mobile-menu" class="hidden absolute right-0 top-full mt-2 w-56 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 py-3 z-50">
-                <div class="px-4 py-2 border-b border-white/20 mb-2">
-                  <span class="text-xs font-medium text-stone-600">{{ session.get('user_name') }}</span>
-                </div>
-                <a href="{{ url_for('user.profile') }}" class="block px-4 py-3 text-sm hover:bg-white/60 transition-colors">👤 Profilim</a>
-                <a href="{{ url_for('user.user_dashboard') }}" class="block px-4 py-3 text-sm hover:bg-white/60 transition-colors">🎯 Seanslarım</a>
-                <a href="{{ url_for('user.calendar') }}" class="block px-4 py-3 text-sm hover:bg-white/60 transition-colors">📅 Takvim</a>
-                <div class="border-t border-white/20 mt-2 pt-2">
-                  <a href="{{ url_for('auth.logout') }}" class="block px-4 py-3 text-sm hover:bg-red-50 text-red-600 transition-colors">🚪 Çıkış</a>
-                </div>
-              </div>
-            </div>
-          {% else %}
-            <a href="{{ url_for('auth.login') }}" class="px-3 py-2 rounded-xl bg-white/70 hover:bg-white/80 transition-colors text-sm">
-              Giriş
-            </a>
-          {% endif %}
+           {% if g.tenant and session.get('user_name') %}
+             <a href="{{ url_for('auth.logout') }}" class="text-xs bg-white/50 px-2 py-1 rounded">Çıkış</a>
+           {% endif %}
         </div>
+
       </nav>
     </div>
   </header>
 
   <div id="flash-message" class="fixed top-4 inset-x-0 z-50 flex justify-center">
-  <div class="w-full max-w-2xl px-4 space-y-3">
-    {% with msgs = get_flashed_messages(with_categories=true) %}
-    {% if msgs %}
-      {% for cat, msg in msgs %}
-        {% set color = 'rose' %}
-        {% if cat in ['success','ok'] %}{% set color='emerald' %}
-        {% elif cat in ['info'] %}{% set color='sky' %}
-        {% elif cat in ['warning'] %}{% set color='amber' %}
-        {% elif cat in ['error','danger'] %}{% set color='rose' %}{% endif %}
-        <div class="pointer-events-auto rounded-2xl bg-white shadow-2xl ring-1 ring-stone-200 overflow-hidden">
-          <div class="flex">
-            <div class="w-1.5 bg-{{ color }}-500"></div>
-            <div class="p-4 text-sm text-stone-800">
-              {{ msg }}
-            </div>
+    <div class="w-full max-w-2xl px-4 space-y-3">
+      {% with msgs = get_flashed_messages(with_categories=true) %}
+      {% if msgs %}
+        {% for cat, msg in msgs %}
+          <div class="pointer-events-auto rounded-2xl bg-white shadow-2xl ring-1 ring-stone-200 overflow-hidden p-4">
+            {{ msg }}
           </div>
-        </div>
-      {% endfor %}
-    {% endif %}
-    {% endwith %}
+        {% endfor %}
+      {% endif %}
+      {% endwith %}
+    </div>
   </div>
-</div>
 
   <main class="mx-auto max-w-6xl px-4 py-8">
     {% block shell %}
@@ -186,47 +118,17 @@
     {% endblock %}
   </main>
 
-  <footer class="mx-auto max-w-6xl px-4 pb-8 text-xs text-stone-600">
-    © Pilates Studio
-  </footer>
-
   {% block scripts %}{% endblock %}
 
   <script>
-    // 3 saniye sonra mesajı yavaşça kaybolacak şekilde gizle
     setTimeout(function() {
       const msg = document.getElementById("flash-message");
       if (msg) {
         msg.style.transition = "opacity 0.5s ease";
         msg.style.opacity = "0";
-        setTimeout(() => msg.remove(), 500); // animasyon bitince DOM'dan sil
+        setTimeout(() => msg.remove(), 500);
       }
     }, 3000);
-
-    // Mobil hamburger menü
-    document.addEventListener('DOMContentLoaded', function() {
-      const menuBtn = document.getElementById('mobile-menu-btn');
-      const menu = document.getElementById('mobile-menu');
-
-      if (menuBtn && menu) {
-        menuBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          menu.classList.toggle('hidden');
-        });
-
-        document.addEventListener('click', function(e) {
-          if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
-            menu.classList.add('hidden');
-          }
-        });
-
-        menu.querySelectorAll('a').forEach(link => {
-          link.addEventListener('click', function() {
-            menu.classList.add('hidden');
-          });
-        });
-      }
-    });
   </script>
 
 </body>
